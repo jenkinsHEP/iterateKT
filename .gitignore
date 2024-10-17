@@ -30,3 +30,16 @@
 *.exe
 *.out
 *.app
+
+# Runtime directories
+/build/
+/test/
+/.vscode/
+/bin/
+/lib/
+
+# Outputs 
+*.pdf
+*.eps
+*.ps
+*.root
