@@ -65,7 +65,7 @@ namespace iterateKT
         virtual double phase_shift(double s) = 0;
 
         // Kernel which appears in the angular average
-        virtual complex kernel(int iso_id, complex s, complex t) = 0;
+        virtual complex ksf_kernel(int iso_id, complex s, complex t) = 0;
 
         // ----------------------------------------------------------------------- 
         // Things related to dispersion integrals and such

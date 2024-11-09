@@ -208,7 +208,7 @@ namespace iterateKT
         {
             complex sum = 0;
             for (auto previous : previous_list) 
-            sum+=kernel(previous->id(),s,t)*previous->basis_function(basis_id,t+pm*_ieps);
+            sum+=ksf_kernel(previous->id(),s,t)*previous->basis_function(basis_id,t+pm*_ieps);
             return sum;
         };
         return (_settings._adaptive_angular) ? gauss_kronrod<double,61>::integrate(fdx, bounds[0], bounds[1], _settings._angular_depth, 1.E-9, NULL)
@@ -228,7 +228,7 @@ namespace iterateKT
             for (auto previous : previous_list) 
             {
                 complex t = this->_kinematics->t_curve(phi);
-                sum += kernel(previous->id(),s,t)*previous->basis_function(basis_id, t);
+                sum += ksf_kernel(previous->id(),s,t)*previous->basis_function(basis_id, t);
                 sum *= this->_kinematics->jacobian(phi);
             };
             return sum;

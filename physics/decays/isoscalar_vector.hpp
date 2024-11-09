@@ -76,8 +76,9 @@ namespace iterateKT
             // Use GKPY phase shift, smoothly extrapolated to pi 
             inline double phase_shift(double s){ return GKPY::phase_shift(1, 1, scale()*s); };
 
-            // Since the prefactors are trivial, the kernel also is
-            inline complex kernel(int iso_id, complex s, complex t)
+            // Kernels is 3*(1-z^2) but to remove kinematic singularities
+            // we multiply by two powers of kappa
+            inline complex ksf_kernel(int iso_id, complex s, complex t)
             { 
                 // Only P-wave allowed in the cross channel
                 if (iso_id != kP_wave) return NaN<complex>();
