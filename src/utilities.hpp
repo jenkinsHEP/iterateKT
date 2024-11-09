@@ -1,5 +1,4 @@
-// Header file with global phyiscal constants.
-// Everything is in GeV unless explicitly stated otherwise.
+// Useful functions and methods
 //
 // ---------------------------------------------------------------------------
 // Author:       Daniel Winney (2024)
@@ -12,8 +11,6 @@
 #define UTILITIES_HPP
 
 #include <cmath>
-#include <complex>
-#include <limits>
 #include <ios>
 #include <iostream>
 #include <iomanip>
@@ -22,59 +19,10 @@
 #include <sstream>
 #include <fstream>
 
-namespace iteratedOKT
+#include "constants.hpp"
+
+namespace iterateKT
 {
-    using complex = std::complex<double>;
-
-    // ---------------------------------------------------------------------------
-    // Mathematical constants 
-
-    #ifndef PI
-        const double PI   = M_PI;
-    #endif
-    const double DEG2RAD  = (M_PI / 180.);
-    const double EPS      = 1.e-7;
-
-    // Unit complex numbers
-    const complex XR  (1., 0.);
-    const complex I   (0., 1.);
-    const complex IEPS(0., EPS);
-
-    // PDG Meson masses in GeV
-    const double M_PION      = 0.13957000;
-    const double M_KAON      = 0.49367700;
-    const double M_ETA       = 0.54753;
-    const double M_RHO       = 0.77526;
-    const double M_OMEGA     = 0.78265;
-    const double M_PHI       = 1.01956;
-
-    // ------------------------------------------------------------------------------
-    // // NaN's, 0, and 1 for throwing errors with custom data types
-
-    template<typename T>
-    inline T NaN()
-    {
-        return std::numeric_limits<T>::quiet_NaN();
-    }
-
-    template<>
-    inline complex NaN()
-    {
-        return complex(std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN());
-    }
-
-    template<typename T>
-    T zero();
-
-    template<>
-    inline complex zero() { return 0; };
-
-    template<typename T> 
-    T identity();
-
-    template<>
-    inline complex identity() { return 1; };
-
     // ---------------------------------------------------------------------------
     // Out of the box std::complex<double> doesnt play well with ints. Here we explicitly
     // give it the functionality we want
@@ -112,22 +60,22 @@ namespace iteratedOKT
 
     inline complex operator+(const complex&c, const int& i)
     {
-        return c + XR*i;
+        return c + complex(1,0)*i;
     };
 
     inline complex operator+(const int& i, const complex & c)
     {
-        return XR*i + c;
+        return complex(1,0)*i + c;
     };
 
     inline complex operator-(const complex&c, const int& i)
     {
-        return c - XR*i;
+        return c - complex(1,0)*i;
     };
 
     inline complex operator-(const int& i, const complex & c)
     {
-        return XR*i - c;
+        return complex(1,0)*i - c;
     };
 
     inline bool operator == (const complex &z,const int n)
@@ -149,7 +97,7 @@ namespace iteratedOKT
 
     // This makes it so we always default to complex regardless of whether the input is an int or double
     template<typename T>
-    complex csqrt(T x){ return sqrt(x * XR); };
+    complex csqrt(T x){ return sqrt(x * complex(1,0)); };
 
     inline unsigned int factorial(unsigned int n) 
     {
@@ -169,9 +117,11 @@ namespace iteratedOKT
     };
 
     // If any of them are complex, return complex
-    inline complex Kallen(complex z, double a, double b) { return Kallen<complex>(z, XR*a, XR*b); };
-    inline complex Kallen(double a, complex z, double b) { return Kallen<complex>(XR*a, z, XR*b); };
-    inline complex Kallen(double a, double b, complex z) { return Kallen<complex>(XR*a, XR*b, z); };
+    inline complex Kallen(complex z, double a, double b) { return Kallen<complex>(z, complex(1,0)*a, complex(1,0)*b); };
+    inline complex Kallen(double a, complex z, double b) { return Kallen<complex>(complex(1,0)*a, z, complex(1,0)*b); };
+    inline complex Kallen(double a, double b, complex z) { return Kallen<complex>(complex(1,0)*a, complex(1,0)*b, z); };
+
+    inline int sign(double x){ return (x >= 0) ? +1 : -1; }
 
     // ---------------------------------------------------------------------------
     // Function for easier comparison of doubles using the EPS value defined above
@@ -200,15 +150,22 @@ namespace iteratedOKT
     };
 
     // Aliases for special cases of the above
-    inline bool is_zero(double a)
+    template<typename T>
+    inline bool is_zero(T a)
     {
         return (std::abs(a) < EPS);
     };
 
     // Aliases for special cases of the above
-    inline bool is_zero(double a, double tol)
+    template<typename T>
+    inline bool is_zero(T a, double tol)
     {
         return (std::abs(a) < tol);
+    };
+
+    inline bool is_odd(int a)
+    {
+        return (a%2 == 1);
     };
 
     // ---------------------------------------------------------------------------
@@ -405,13 +362,128 @@ namespace iteratedOKT
     {
        // Find the correct data file using the top level repo directory
         std::string top_dir;
-        char const * env = std::getenv("iteratedOKT");
+        char const * env = std::getenv("iterateKT");
         if ( env == NULL || std::string(env) == "" )
         {
-            return error("main_dir(): Cannot find environment variable iteratedOKT!", "");
+            return error("main_dir(): Cannot find environment variable ITERATEKT!", "");
         }
         return std::string(env);  
     };
+
+    // ---------------------------------------------------------------------------
+    // Element-wise operations on data vectors
+
+    // Given two vector<double>s of the same size, calculate the average element wise
+    inline std::vector<double> operator*( std::vector<double> lhs, double c)
+    {
+        std::vector<double> result;
+        for (int i = 0; i < lhs.size(); i++)
+        {
+            result.push_back( lhs[i]*c );
+        };
+        return result;
+    };
+
+    inline std::vector<double> operator*(double c, std::vector<double> rhs)
+    {
+        std::vector<double> result;
+        for (int i = 0; i < rhs.size(); i++)
+        {
+            result.push_back( c*rhs[i] );
+        };
+        return result;
+    };
+
+    inline std::vector<double> operator/( std::vector<double> lhs, double c)
+    {
+        std::vector<double> result;
+        for (int i = 0; i < lhs.size(); i++)
+        {
+            result.push_back( lhs[i]/c );
+        };
+        return result;
+    };
+
+    inline std::vector<double> operator-(const std::vector<double> & x)
+    {
+        return -1 * x;
+    };
+
+    inline std::vector<double> operator/=(const std::vector<double> & x, double c)
+    {
+        return x/c;
+    };
+
+    inline std::vector<double> operator*=(const std::vector<double> & x, double c)
+    {
+        return x*c;
+    };
+    
+    inline std::vector<double> operator+(std::vector<double> lhs, std::vector<double> rhs)
+    {
+        if (lhs.size() != rhs.size()) return error("Attempted to add two vectors of different sizes!", std::vector<double>());
+
+        std::vector<double> result;
+        for (int i = 0; i < lhs.size(); i++)
+        {
+            result.push_back( lhs[i] + rhs[i] );
+        };
+        return result;
+    };
+
+    inline std::vector<double> operator-(std::vector<double> lhs, std::vector<double> rhs)
+    {
+        if (lhs.size() != rhs.size()) return error("Attempted to add two vectors of different sizes!", std::vector<double>());
+
+        std::vector<double> result;
+        for (int i = 0; i < lhs.size(); i++)
+        {
+            result.push_back( lhs[i] - rhs[i] );
+        };
+        return result;
+    };
+
+    // Add a constant to all elements of a vector
+    inline std::vector<double> operator+(double lhs, std::vector<double> rhs)
+    {
+        std::vector<double> result;
+        for (int i = 0; i < rhs.size(); i++)
+        {
+            result.push_back( lhs + rhs[i] );
+        };
+        return result;
+    };   
+    inline std::vector<double> operator-(double lhs, std::vector<double> rhs) 
+    {
+        return lhs + (-rhs);
+    };
+
+    inline std::vector<double> operator+(std::vector<double> lhs, double rhs)
+    {
+        std::vector<double> result;
+        for (int i = 0; i < lhs.size(); i++)
+        {
+            result.push_back( rhs + lhs[i] );
+        };
+        return result;
+    };
+    inline std::vector<double> operator-(std::vector<double> lhs, double rhs) 
+    {
+        return lhs + (-rhs);
+    };
+
+    inline std::vector<double> multiply_elementwise(std::vector<double> in1, std::vector<double> in2)
+    {
+        if (in1.size() != in2.size()) warning("multiply_elementwise()", "Input vectors not the same size!");
+
+        std::vector<double> out;
+        for (int i = 0; i < in1.size(); i++)
+        {
+            out.push_back(in1[i]*in2[i]);
+        }
+        return out;
+    };
+    inline std::vector<double> square(std::vector<double> in){ return multiply_elementwise(in, in); };
 
 };
 // ---------------------------------------------------------------------------

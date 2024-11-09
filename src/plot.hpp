@@ -27,58 +27,15 @@
 #include <TGraphErrors.h>
 #include <TLatex.h>
 #include <TLine.h>
+#include <TStyle.h>
 
 #include "data_set.hpp"
 #include "colors.hpp"
 
-namespace iteratedOKT
+namespace iterateKT
 {
     class plotter;
-
-    struct entry_style
-    {
-        jpacColor _color      = jpacColor::DarkGrey;  // Color code 
-        int  _style           = 0;                    // Either linestyle or markerstyle code
-        bool _add_to_legend   = true;                 // Whether to add this curve to the legend
-        std::string _label    = "";                   // Label to add to Legend
-        std::string _draw_opt = "L";                // string which enters ROOT::Draw() 
-    };
-
-    inline entry_style dashed(jpacColor color, std::string id = "")
-    {
-        entry_style dashed;
-        dashed._color = color;
-        dashed._style = kDashed;
-        dashed._label = id;
-        dashed._add_to_legend = (dashed._label != "");
-        return dashed;
-    };
-
-    inline entry_style solid(jpacColor color, std::string id = "")
-    {
-        entry_style dashed;
-        dashed._color = color;
-        dashed._style = kSolid;
-        dashed._label = id;
-        dashed._add_to_legend = (dashed._label != "");
-        return dashed;
-    };
-
-    inline entry_style dotted(jpacColor color, std::string id = "")
-    {
-        entry_style dotted;
-        dotted._color = color;
-        dotted._style = kDotted;
-        dotted._label = id;
-        dotted._add_to_legend = (dotted._label != "");
-        return dotted;
-    };
-
-    enum curve_type { 
-                      sigma_s,      sigma_w,      sigma_Egam,       // Integrated cross-sections as functions of s, W, and Egam
-                      dsigmadt_s,   dsigmadt_w,   dsigmadt_Egam,    // Differential x-sections as function of t at fixed s, W, Egam
-                    };
-
+    
     // Each entry represents a curve to draw as a TGraph
     struct plot_entry 
     {
@@ -192,6 +149,7 @@ namespace iteratedOKT
             new_vert._linestyle = style[1];   
             _vlines.push_back(new_vert);
         };
+        inline void add_vertical(std::vector<double> xvals){ for (auto x : xvals) add_vertical(x); };
 
         inline void add_horizontal(double y_val, std::array<int, 2> style = {kBlack, kSolid})
         {
@@ -201,6 +159,7 @@ namespace iteratedOKT
             new_horiz._linestyle = style[1];   
             _hlines.push_back(new_horiz);
         };
+        inline void add_horizontal(std::vector<double> yvals){ for (auto y : yvals) add_horizontal(y); };
 
         // -----------------------------------------------------------------------
         // OPTION SETTERS

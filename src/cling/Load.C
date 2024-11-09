@@ -12,15 +12,14 @@ void Load()
     //----------------------------------------------------------------------
     // Core library
 
-    TString main_dir  = gSystem->Getenv("ITERATEDOKT");
+    TString main_dir  = gSystem->Getenv("ITERATEKT");
 
     // Load the main library files
-    TString lib  = main_dir + "/lib/libITERATEDOKT." + lib_ext;
+    TString lib  = main_dir + "/lib/libITERATEKT." + lib_ext;
 
     // Headers
-    TString core = main_dir + "/src"; 
-    TString phys = main_dir + "/models";
-    TString data = main_dir + "/data";
+    TString core    = main_dir + "/src"; 
+    TString physics = main_dir + "/physics";
 
     if (!gSystem->AccessPathName(lib.Data()))
     {
@@ -28,11 +27,10 @@ void Load()
         if (lib_loaded < 0) Fatal("Load()", "Library not loaded sucessfully!");
 
         gInterpreter->AddIncludePath( core.Data());
-        gInterpreter->AddIncludePath( phys.Data());
-        gInterpreter->AddIncludePath( data.Data());
+        gInterpreter->AddIncludePath( physics.Data());
     }
     else
     {
-        Warning("Load()", "iteratedOKT library not found! Looked in: %s", lib.Data());
+        Warning("Load()", "iterateKT library not found! Looked in: %s", lib.Data());
     }
 }

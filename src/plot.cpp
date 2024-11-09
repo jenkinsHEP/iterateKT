@@ -11,7 +11,7 @@
 #include "plot.hpp"
 #include "colors.hpp"
 
-namespace iteratedOKT
+namespace iterateKT
 {
     // ---------------------------------------------------------------------------
     // Outputting function, generates plot and saves it to file
@@ -40,6 +40,14 @@ namespace iteratedOKT
 
     void plot::draw()
     {
+        bool add_padding = _customranges && std::abs(_ybounds[0]) < 0.09 && std::abs(_ybounds[1]) < 0.09;
+        if (add_padding) 
+        {
+            auto style = gROOT->GetStyle("jpacStyle");
+            style->SetTitleOffset(1.8, "y");
+            _canvas->UseCurrentStyle();
+        };
+
         TMultiGraph * mg = new TMultiGraph("mg", "mg");
 
         // Set up the axes by grabbing them from the first entry
@@ -125,6 +133,13 @@ namespace iteratedOKT
             b->Draw();
         }
 
+        // Remove padding at the end
+        if (add_padding) 
+        {
+            auto style = gROOT->GetStyle("jpacStyle");
+            style->SetTitleOffset(1.5, "y");
+            _canvas->UseCurrentStyle();
+        };
     };
 
     // ---------------------------------------------------------------------------
