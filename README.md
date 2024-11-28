@@ -37,10 +37,10 @@ iterateKT my_script.cpp
 ```
 or add the bin directory to $PATH to call `iterateKT` from any directory. 
 
-The main classes of interest are:
-- [`kinematics`](./src/kinematics.hpp) This contains all relevant information regarding the masses of particles involved. So far, the three final state particles must have the same mass. 
-- [`amplitude`](./src/amplitude.hpp) Acts as a container class which specifies how different isobars contribute to a specific process. This allows a user to implement different isospin/helicity amplitudes and calculate decay widths.
-- [`isobar`](./src/isobar.hpp) This is the main physics object as it reconstructs two-particle subsystems in terms of basis functions after arbitrary iterations of the KT equations.
+The classes of interest are:
+- [`kinematics`](./src/kinematics.hpp) contains all relevant information regarding the masses of particles involved and kinematic quantities. So far, the three final state particles must have the same mass. 
+- [`amplitude`](./src/amplitude.hpp) acts as a container class which specifies how different isobars contribute to a specific process and how to combine them to a full amplitude in terms of all Mandelstam variables.
+- [`isobar`](./src/isobar.hpp) is the main physics object as it reconstructs two-particle subsystems in terms of basis functions after arbitrary iterations of the KT equations.
 
 A typical script may look like this
 ```c++
@@ -48,22 +48,25 @@ A typical script may look like this
 kinematics kin = new_kinematics(m_decay, m_final_state);
 
 // Specify amplitude structure (quantum numbers)
-amplitude  amp = new_amplitude<my_amplitude>(kin, "My Decay Process");
+amplitude  amp = new_amplitude<my_amplitude>(kin);
 
 // Specify each isobar and number of subtractions
-amp->add_isobar<my_first_isobar> (n_subtractions);
-amp->add_isobar<my_second_isobar>(m_subtractions);
+// Total number of basis functions will be i+j+k 
+amp->add_isobar<first_isobar> (i);
+amp->add_isobar<second_isobar>(j);
+amp->add_isobar<third_isobar> (k);
 
 // Iterate the KT equations
-amp->iterate(N_iterations);
+amp->iterate(N);
 
 // Access all isobars
 std::vector<isobar> isobars = amp->get_isobars();
 // or an individual one
-isobar first_isobar = amp->get_isobar(id_of_first_isobar);
+isobar first_isobar = amp->get_isobar(id::first_isobar);
 
-// Evaluate the ith iteration of the jth basis function
-print(first_isobar->basis_function(i, j, s+IEPS));
+// Evaluate the lth basis function above and below cut
+print("above", first_isobar->basis_function(l, s+IEPS));
+print("below", first_isobar->basis_function(l, s-IEPS));
 
 // Evaluate the full amplitude
 print(amp->evaluate(s, t, u));
