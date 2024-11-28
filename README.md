@@ -72,8 +72,8 @@ print(amp->evaluate(s, t, u));
 ### Virtual functions
 As illustrated above, `isobar` is a pointer to an instance of an abstract template class ( `raw_isobar`). The following virtual functions which must be implemented by the user in a derived class in order to specify the physics case of interest:
 
-##### `uint raw_isobar::id()`
-Each isobar $F_i(s)$ needs to be assigned an integer $i$ to identify it, which should be unique among the set of isobars considered.
+##### `id raw_isobar::get_id()`
+Each isobar $F_i(s)$ needs to be assigned an id to identify it. This is accomplished by defining `enum class id : unsigned int` in the `iterateKT` namespace with all the different isobars which may contribute to a given process. Then each isobar should use `get_id()` to return their specific id. 
 
 ##### `double raw_isobar::phase_shift(double s)`
 The elastic phase shift $\delta_i(s)$ fully determines the Omnes function $\Omega_i(s)$ and therefore the initial guess for each isobar.
