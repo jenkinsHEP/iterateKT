@@ -13,17 +13,15 @@
 #include "colors.hpp"
 #include "constants.hpp"
 #include "timer.hpp"
-#include "decays/V_to_3pi.hpp"
+#include "decays/vector.hpp"
 
 #include "plotter.hpp"
-
-using namespace iterateKT;
 
 void test_pinocchio()
 {
     using namespace iterateKT;
-    using namespace V_to_3pi;
-
+    using vector =  iterateKT::vector;
+    
     // Set up general kinematics so everything knows masses
     kinematics omega = new_kinematics(M_OMEGA, M_PION);
 
@@ -34,11 +32,11 @@ void test_pinocchio()
     double D = omega->D();
 
     // Set up our amplitude 
-    amplitude amplitude = new_amplitude<isoscalar>(omega);
+    amplitude amplitude = new_amplitude<vector>(omega);
 
     // We need to load our amplitude with our isobars 
     // Up to two subtractions so we have two basis functions
-    amplitude->add_isobar<V_to_3pi::P_wave>(1);
+    amplitude->add_isobar<vector::P_wave>(1);
     auto previous = amplitude->get_isobars();
 
     // Isolate our pwave

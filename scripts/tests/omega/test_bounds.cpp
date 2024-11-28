@@ -12,11 +12,9 @@
 #include "utilities.hpp"
 #include "colors.hpp"
 #include "constants.hpp"
-#include "decays/V_to_3pi.hpp"
+#include "decays/vector.hpp"
 
 #include "plotter.hpp"
-
-using namespace iterateKT;
 
 void test_bounds()
 {

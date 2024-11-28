@@ -13,26 +13,24 @@
 #include "colors.hpp"
 #include "constants.hpp"
 #include "timer.hpp"
-#include "decays/V_to_3pi.hpp"
+#include "decays/vector.hpp"
 
 #include "plotter.hpp"
-
-using namespace iterateKT;
 
 void test_omnes()
 {
     using namespace iterateKT;
-    using namespace V_to_3pi;
+    using vector =  iterateKT::vector;
 
     // Set up general kinematics so everything knows masses
     kinematics omega = new_kinematics(M_OMEGA/M_PION, 1.);
 
     // Set up our amplitude 
-    amplitude A = new_amplitude<isoscalar>(omega);
+    amplitude A = new_amplitude<vector>(omega);
 
     // We need to load our amplitude with our isobars 
     // Up to two subtractions so we have two basis functions
-    A->add_isobar<P_wave>(2);
+    A->add_isobar<vector::P_wave>(2);
 
     // Isolate our pwave
     isobar pwave = A->get_isobar(kP_wave);
@@ -51,20 +49,9 @@ void test_omnes()
     p1.add_curve({EPS, 60}, [&](double s){ return std::imag(pwave->omnes(s+IEPS));}, solid(jpacColor::Red));
     p1.add_curve({EPS, 60}, [&](double s){ return std::real(pwave->omnes(s-IEPS));}, dashed(jpacColor::Blue,"-ieps"));
     p1.add_curve({EPS, 60}, [&](double s){ return std::imag(pwave->omnes(s-IEPS));}, dashed(jpacColor::Red));
-    p1.set_labels("#it{s} / m_{#pi}^{2}", "#Omega_{1}^{1}");
+    p1.set_labels("#it{s} / m_{#pi}^{2}", "#Omega_{1}^{1}(#it{s})");
 
-    timer.lap("plot 1");
-
-    plot p3 = plotter.new_plot();
-    p3.set_curve_points(200);
-    p3.set_legend(0.5,0.4);
-    p3.add_curve({omega->sth(), 250}, [&](double s){ return pwave->LHC(s);});
-    p3.set_labels("#it{s} / m_{#pi}^{2}", "sin#delta(#it{s}) / |#Omega(#it{s})|");
-
-    timer.lap("plot 2");
-
-    // Save plots
-    plotter.combine({2,1}, {p1,p3}, "omnes.pdf");
+    p1.save("omnes.pdf");
 
     timer.stop();
     timer.print_elapsed();

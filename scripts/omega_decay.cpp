@@ -13,18 +13,17 @@
 #include "colors.hpp"
 #include "constants.hpp"
 #include "timer.hpp"
-#include "decays/isoscalar_vector.hpp"
+#include "decays/vector.hpp"
 
 #include "plotter.hpp"
-
-using namespace iterateKT;
 
 void omega_decay()
 {
     using namespace iterateKT;
-    using P_wave = isoscalar_vector::P_wave;
+    using vector =  iterateKT::vector;
 
     // Set up general kinematics so everything knows masses
+    // Use masses in units of pion mass
     kinematics kinematics = new_kinematics(M_OMEGA/M_PION, 1.);
     
     // Significant points in integration path
@@ -34,13 +33,13 @@ void omega_decay()
     double D = kinematics->D();
 
     // Set up our amplitude 
-    amplitude amplitude = new_amplitude<isoscalar_vector>(kinematics, "#Omega decay");
+    amplitude amplitude = new_amplitude<vector>(kinematics);
 
     // We need to load our amplitude with our isobars 
     // Up to two subtractions so we have two basis functions
-    amplitude->add_isobar<P_wave>(2);
-    isobar pwave = amplitude->get_isobar(kP_wave);
-
+    amplitude->add_isobar<vector::P_wave>(2);
+    isobar pwave = amplitude->get_isobar(id::P_wave);
+    
     // -----------------------------------------------------------------------
     
     timer timer;
@@ -51,7 +50,7 @@ void omega_decay()
     plot p1 = plotter.new_plot();
     p1.set_legend(0.2, 0.7);
     p1.set_curve_points(100);
-    p1.set_ranges({-15, 70}, {-3, 6.5});
+    p1.set_ranges({-15, 70}, {-4, 6.5});
     p1.set_labels("#it{s} / m_{#pi}^{2}", "F_{a}(#it{s} + #it{i}#epsilon)");
     p1.add_vertical({A, C, D});
     p1.add_horizontal(0);

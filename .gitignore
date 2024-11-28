@@ -37,9 +37,12 @@
 /.vscode/
 /bin/
 /lib/
+physics/phase_shifts/bern/
+scripts/tests/comparisons/
 
 # Outputs 
 *.pdf
 *.eps
 *.ps
 *.root
+*.dat

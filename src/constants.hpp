@@ -18,8 +18,11 @@ namespace iterateKT
 {
     using complex = std::complex<double>;
 
-    // Number of gaussian quadrature points to use in nonadaptive integration
-    const int N_GAUSS = 100;
+    // Number of gaussian quadrature points to use in the various integrations
+    constexpr int N_GAUSS_CAUCHY     = 151;
+    constexpr int N_GAUSS_PSEUDO     = 61;
+    constexpr int N_GAUSS_OMNES      = 61;
+    constexpr int N_GAUSS_ANGULAR    = 31;
 
     // ---------------------------------------------------------------------------
     // Mathematical constants 
@@ -32,7 +35,7 @@ namespace iterateKT
     #endif
 
     const double DEG2RAD  = (M_PI / 180.);
-    const double EPS      = 1.e-7;
+    const double EPS      = 1.e-8;
     const complex IEPS    = I*EPS;
 
     // PDG Meson masses in GeV
@@ -55,7 +58,7 @@ namespace iterateKT
     };
 
     template<>
-    inline complex NaN()
+    inline complex NaN() 
     {
         return complex(std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN());
     };

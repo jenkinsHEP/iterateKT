@@ -13,17 +13,16 @@
 #include "colors.hpp"
 #include "constants.hpp"
 #include "timer.hpp"
-#include "basis_grid.hpp"
-#include "decays/V_to_3pi.hpp"
+#include "basis.hpp"
+#include "decays/vector.hpp"
 
 #include "plotter.hpp"
 
-using namespace iterateKT;
 
 void test_inhomogeneity()
 {
     using namespace iterateKT;
-    using namespace V_to_3pi;
+    using vector =  iterateKT::vector;
 
     // Set up general kinematics so everything knows masses
     // Assume masses are given in terms of pion mass
@@ -36,11 +35,11 @@ void test_inhomogeneity()
     double D = omega->D();
 
     // Set up our amplitude 
-    amplitude amplitude = new_amplitude<isoscalar>(omega);
+    amplitude amplitude = new_amplitude<vector>(omega);
 
     // We need to load our amplitude with our isobars 
     // Up to two subtractions so we have two basis functions
-    amplitude->add_isobar<V_to_3pi::P_wave>(1);
+    amplitude->add_isobar<vector::P_wave>(1);
     auto previous = amplitude->get_isobars();
 
     // Isolate our pwave
@@ -57,17 +56,17 @@ void test_inhomogeneity()
     timer.lap("grid");
 
     // first nontrivial iteration
-    iteration first = new_iteration(1, 3, grid, omega, P_wave::default_settings());
+    iteration first = new_iteration(omega, grid, vector::P_wave::default_settings());
 
     double smax = 60;
 
     plot p1 = plotter.new_plot();
     p1.set_legend(0.45, 0.6);
     p1.set_curve_points(100);
-    p1.set_ranges({A, smax}, {-100, 100});
-    p1.add_curve( {A, smax}, [&](double s){ return std::real(first->ksf_inhomogeneity(0, s)); }, solid(jpacColor::Blue, "Real"));
-    p1.add_curve( {A, smax}, [&](double s){ return std::imag(first->ksf_inhomogeneity(0, s)); }, solid(jpacColor::Red,  "Imaginary"));
-    p1.set_labels("#it{s}/#it{m}_{#pi}^{2}", "#tilde{F}^{1}_{0}");
+    p1.set_ranges({A, smax}, {0, 0.015});
+    p1.add_curve( {A, smax}, [&](double s){ return std::real(first->regularized_integrand(0, s)); }, solid(jpacColor::Blue, "Real"));
+    p1.add_curve( {A, smax}, [&](double s){ return std::imag(first->regularized_integrand(0, s)); }, solid(jpacColor::Red,  "Imaginary"));
+    p1.set_labels("#it{s}/#it{m}_{#pi}^{2}", "#tilde{F}^{1}_{0} / #kappa^{3}");
     p1.add_vertical({A, C, D});
 
     plot p3 = plotter.new_plot();
@@ -79,7 +78,7 @@ void test_inhomogeneity()
     p3.set_labels("#it{s}/#it{m}_{#pi}^{2}", "#tilde{F}^{1}_{0} / #nu^{3}");
     p3.add_vertical({A, C, D});
 
-    plotter.combine({2,1}, {p1,p3}, "inhomogeneity.pdf");
+    plotter.combine({2,1}, {p3,p1}, "inhomogeneity.pdf");
 
     timer.stop();
     timer.print_elapsed();
