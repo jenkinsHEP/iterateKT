@@ -18,10 +18,10 @@
 #include "iteration.hpp"
 #include "settings.hpp"
 #include "basis.hpp"
+#include "data_set.hpp"
 #include "timer.hpp"
 #include <Math/Interpolator.h>
 #include <boost/math/quadrature/gauss_kronrod.hpp>
-#include <boost/math/quadrature/gauss.hpp>
 
 namespace iterateKT
 {
@@ -31,12 +31,22 @@ namespace iterateKT
     // Define isobars only as pointers
     using isobar  = std::shared_ptr<raw_isobar>;
 
+    // All the things you need to initialize an isobar can get lumped into a struct
+    struct isobar_args
+    {
+        kinematics _kin;
+        id _id;
+        subtractions _subs;
+        uint _maxsub;
+        std::string _name;
+        settings _sets;
+    };
+
     // This function serves as our "constructor"
     template<class A>
-    inline isobar new_isobar(kinematics kin, subtractions subs, uint maxsub, settings sets = settings() )
+    inline isobar new_isobar(isobar_args args)
     {
-        auto x = std::make_shared<A>(kin, subs, maxsub, sets);
-        return std::static_pointer_cast<raw_isobar>(x);
+        return std::static_pointer_cast<raw_isobar>(std::make_shared<A>(args));
     };
 
     class raw_isobar
@@ -45,23 +55,16 @@ namespace iterateKT
         public:
 
         // Default constructor
-        raw_isobar(kinematics xkin, subtractions subs, uint maxsub, settings sets) 
-        : _kinematics(xkin), _settings(sets), _subtractions(subs)
+        raw_isobar(isobar_args args) 
+        : _kinematics(args._kin), _settings(args._sets), _subtractions(args._subs), _id(args._id), _name(args._name)
         { 
             // When we have "unsubtracted" we assume we do have one but no polynomial
-            _max_sub = (maxsub == 0) ? 1 : maxsub;
+            _max_sub = (args._maxsub == 0) ? 1 : args._maxsub;
             initialize();
         };
 
-        // Each isobar should have an identifying int (suggest implementing this with enums)
-        //  and a string name for human readable id
-        inline void set_name(std::string x){ _name = x; };
-        inline std::string name(){ return _name; }; 
-
         // -----------------------------------------------------------------------
         // Mandatory virtual methods which need to be overriden
-
-        virtual id get_id() = 0;
 
         // The power (p q)^n that appears in angular momentum barrier factor
         // This determines the type of matching required at pseudothreshold
@@ -103,19 +106,47 @@ namespace iterateKT
 
         // -----------------------------------------------------------------------
         // Utilities
+        
+        // Import an iteration that was previously saved to file
+        template<int N>
+        void import_iteration(std::string filename)
+        {
+            auto imported = import_data<2*N+1>(filename, true);
+            _s_list = std::move(imported[0]);
 
-        // Thing related to the options
-        inline         uint option()          { return _option; };
-        virtual inline void set_option(uint x){ _option = x; };
+            basis_grid grid;
+            grid._n_singularity = singularity_power()+1;
+            grid._s_list = _s_list;
+            grid._s_around_pth = _s_around_pth;
+            
+            for (int i = 0; i < N; i++)
+            {
+                grid._re_list.push_back(std::move(imported[1+2*i]));
+                grid._im_list.push_back(std::move(imported[2+2*i]));
+            };
+            save_iteration(grid);
+        };
 
         // Flag used for internal debugging
         inline void set_debug(uint x){ _debug = x; };
-
+        // Grab pointer to latest iteration
+        iteration get_iteration(){ return _iterations.back();};
         // Grab a pointer to a specific iteration of an isobar
         iteration get_iteration(uint id){ return _iterations[id];};
 
+        // Each isobar should have an identifying int (suggest implementing this with enums)
+        //  and a string name for human readable id
+        inline void set_name(std::string x){ _name = x; };
+        inline std::string name(){ return _name; }; 
+
+        // Only way to publically access the isobars id
+        inline id get_id(){ return _id; };
+
         // -----------------------------------------------------------------------
         protected:
+
+        // Id of the isobar, see definition in basis.hpp
+        id _id;
 
         // Kinematics instance
         kinematics _kinematics;
@@ -143,10 +174,7 @@ namespace iterateKT
         private:
 
         // Private method only accessible to raw_amplitude
-        friend class raw_amplitude;
-
-        // Overal option flag 
-        uint _option = 0;
+        friend class solver;
 
         // IDs
         std::string _name = "isobar";
@@ -172,7 +200,6 @@ namespace iterateKT
         ROOT::Math::Interpolator _lhc;
         bool _lhc_interpolated = false;
     };
-
 }; // namespace iterateKT
 
 #endif // ISOBAR_HPP

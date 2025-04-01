@@ -1,4 +1,4 @@
-// delta I = 1 transition amplitude for eta->3pi
+// Basis functions for eta -> 3pi following [1]
 //
 // ------------------------------------------------------------------------------
 // Author:       Daniel Winney (2024)
@@ -7,7 +7,7 @@
 // Email:        daniel.winney@gmail.com
 // ------------------------------------------------------------------------------
 // REFERENCES: 
-// [1] -  https://arxiv.org/abs/2111.02417
+// [1] - https://arxiv.org/abs/2111.02417
 // ------------------------------------------------------------------------------
 
 #include "kinematics.hpp"
@@ -17,10 +17,10 @@
 #include "constants.hpp"
 #include "timer.hpp"
 #include "basis.hpp"
-#include "decays/isoscalar_pseudoscalar.hpp"
-
 #include "plotter.hpp"
+#include "solver.hpp"
 
+#include "isobars/eta.hpp"
 
 void eta_decay()
 {
@@ -32,21 +32,17 @@ void eta_decay()
     // Assume masses are given in terms of pion mass
     kinematics kin = new_kinematics(M_ETA/M_PION, 1.);
 
-    // Significant points in integration path
-    double A = kin->A();
-    double B = kin->B();
-    double C = kin->C();
-    double D = kin->D();
-
     // Set up our amplitude 
-    amplitude amp = new_amplitude<charged_mode>(kin);
+    solver solver(kin);
 
-    amp->add_isobar<dI1_S0>(2); 
-    amp->add_isobar<dI1_P1>(1); 
-    amp->add_isobar<dI1_S2>(0);
-    amp->add_isobar<dI0_P1>(1);
-    amp->add_isobar<dI2_P1>(1); 
-    amp->add_isobar<dI2_S2>(0);
+    // Add all the isobars, note the order they are added will be the order
+    // the basis functions are generated
+    solver.add_isobar<dI1_S0>({0,1}, 2, id::dI1_S0); 
+    solver.add_isobar<dI1_P1>({0},   1, id::dI1_P1); 
+    solver.add_isobar<dI1_S2>({},    1, id::dI1_S2);
+    solver.add_isobar<dI0_P1>({0},   1, id::dI0_P1);
+    solver.add_isobar<dI2_P1>({0},   1, id::dI2_P1); 
+    solver.add_isobar<dI2_S2>({},    1, id::dI2_S2);
 
     // -----------------------------------------------------------------------
     // Iterate N times
@@ -57,7 +53,7 @@ void eta_decay()
     timer.start();
     for (int i = 1; i <= N; i++)
     {
-        amp->iterate();
+        solver.iterate();
         timer.lap("iteration " + std::to_string(i));
     }
     timer.stop();
@@ -89,12 +85,12 @@ void eta_decay()
     };
 
     // Grab out isobars for plotting
-    isobar dI1_S0 = amp->get_isobar(id::dI1_S0);
-    isobar dI1_P1 = amp->get_isobar(id::dI1_P1);
-    isobar dI1_S2 = amp->get_isobar(id::dI1_S2);
-    isobar dI0_P1 = amp->get_isobar(id::dI0_P1);
-    isobar dI2_P1 = amp->get_isobar(id::dI2_P1);
-    isobar dI2_S2 = amp->get_isobar(id::dI2_S2);
+    isobar dI1_S0 = solver.get_isobar(id::dI1_S0);
+    isobar dI1_P1 = solver.get_isobar(id::dI1_P1);
+    isobar dI1_S2 = solver.get_isobar(id::dI1_S2);
+    isobar dI0_P1 = solver.get_isobar(id::dI0_P1);
+    isobar dI2_P1 = solver.get_isobar(id::dI2_P1);
+    isobar dI2_S2 = solver.get_isobar(id::dI2_S2);
 
     plot f0a = plot_basis(dI1_S0, 0, "F_{0}^{#alpha}(#it{s})");
     plot f1a = plot_basis(dI1_P1, 0, "F_{1}^{#alpha}(#it{s})");

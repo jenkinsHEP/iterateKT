@@ -33,6 +33,8 @@ namespace iterateKT
         double s3  = _settings._intermediate_energy;
         double s4  = _settings._cutoff;
 
+        if (s3 <= s2 || s2 <= s1) warning("Intermediate energy chosen below pseudo-threshold! May cause interpolation troubles...");
+        
         std::array<int,3> Ns = _settings._interpolation_points;
         int N_0  = Ns[0];
         int N_1  = int((s1 - s0)/(s3 - s0)*N_0);
@@ -47,20 +49,20 @@ namespace iterateKT
         for (int i = 0; i < N_3; i++) _s_list.push_back(s2 + (s3 - s2)*double(i)/double(N_3-1));
         s3 += eps;
         for (int i = 0; i < N_4; i++) _s_list.push_back(s3 + (s4 - s3)*double(i)/double(N_4-1));
-        
+
         // We also need to be able to excluse a part of the isobars around pth
         int N = _settings._exclusion_points/2;
         for (int k = 0; k <= N; k++)
         {
             double low  = (pth - 2*_settings._exclusion_offsets[0]);
             double high = (pth -   _settings._exclusion_offsets[0]);
-            _s_around_pth.push_back(low - (low - high)*double(k)/N);
+            _s_around_pth.push_back(low - (low - high)*double(k)/double(N));
         };
         for (int k = 0; k <= N; k++)
         {
             double low  = (pth +   _settings._exclusion_offsets[1]);
             double high = (pth + 2*_settings._exclusion_offsets[1]);
-            _s_around_pth.push_back(low - (low - high)*double(k)/N);
+            _s_around_pth.push_back(low - (low - high)*double(k)/double(N));
         };
     };
 
@@ -69,7 +71,7 @@ namespace iterateKT
     {
         std::vector<double> lhc;
         for (auto s : _s_list) lhc.push_back( sin(this->phase_shift(s))/std::abs(omnes(s+_ieps)) );
-        _lhc.SetData(_s_list, lhc);
+        _lhc.SetData(_s_list, lhc); 
         _lhc_interpolated = true;
     };
 
@@ -133,8 +135,8 @@ namespace iterateKT
     // Specify a given iteration to use when outputting the basis_function
     complex raw_isobar::basis_function(unsigned int iter_id, unsigned int basis_id, complex s)
     {
-        if (iter_id  >  _iterations.size())        return error("Requested iteration does not exist!", NaN<complex>());
-        if (basis_id >= _subtractions->N_basis())  return error("Requested basis function does not exist!", NaN<complex>());
+        if (iter_id  >=  _iterations.size())       return 0;
+        if (basis_id >= _subtractions->N_basis())  return 0;
 
         bool no_poly = (_subtractions->get_id(basis_id) != get_id());
         complex polynomial = (no_poly) ? 0 : pow(s, _subtractions->get_power(basis_id));
@@ -155,8 +157,8 @@ namespace iterateKT
     {
         basis_grid output;
         output._n_singularity = singularity_power()+1;
-        output._s_list = _s_list;
-        output._s_around_pth = _s_around_pth;
+        output._s_list        = _s_list;
+        output._s_around_pth  = _s_around_pth;
         
         // Sum over basis functions
         for (int i = 0; i < _subtractions->N_basis(); i++)

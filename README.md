@@ -10,9 +10,10 @@ satisfying the unitarity condition
 ```
 For maximum flexibility, the code only requires specifying the elastic phase shift $\delta_i(s)$ and kernel functions $K_{ij}(s,t)$ of each isobar. Things such as isospin and/or helicity amplitudes can be built outside of the core iterative functionality by combining isobars into a full amplitude.
 
+Note that convergence of the KT equations is not guaranteed! This may depend on the number of isobars, number of subtractions, and quantum numbers considered.
 ##  INSTALLATION
 
-Compilation of the base library requires only [ROOT](https://root.cern.ch/) (tested with version 6.24) with [*MathMore*](https://root.cern.ch/mathmore-library) and [Boost C++](https://www.boost.org/) (version $\geq$ 1.68) libraries.
+Compilation of the base library requires only [CMake](https://cmake.org/) (version $\geq$ 3.30), [ROOT](https://root.cern.ch/) (tested with version 6.24) with [*MathMore*](https://root.cern.ch/mathmore-library), and [Boost C++](https://www.boost.org/) (version $\geq$ 1.68).
 
 To install, clone normally and use:
 ```bash
@@ -51,10 +52,10 @@ kinematics kin = new_kinematics(m_decay, m_final_state);
 amplitude  amp = new_amplitude<my_amplitude>(kin);
 
 // Specify each isobar and number of subtractions
-// Total number of basis functions will be i+j+k 
-amp->add_isobar<first_isobar> (i);
-amp->add_isobar<second_isobar>(j);
-amp->add_isobar<third_isobar> (k);
+// Total number of basis functions (per isobar) will be (i+j+k)
+amp->add_isobar<first_isobar> (i, id::first_isobar);
+amp->add_isobar<second_isobar>(j, id::second_isobar);
+amp->add_isobar<third_isobar> (k, id::third_isoar);
 
 // Iterate the KT equations
 amp->iterate(N);
@@ -74,9 +75,6 @@ print(amp->evaluate(s, t, u));
 
 ### Virtual functions
 As illustrated above, `isobar` is a pointer to an instance of an abstract template class ( `raw_isobar`). The following virtual functions which must be implemented by the user in a derived class in order to specify the physics case of interest:
-
-##### `id raw_isobar::get_id()`
-Each isobar $F_i(s)$ needs to be assigned an id to identify it. This is accomplished by defining `enum class id : unsigned int` in the `iterateKT` namespace with all the different isobars which may contribute to a given process. Then each isobar should use `get_id()` to return their specific id. 
 
 ##### `double raw_isobar::phase_shift(double s)`
 The elastic phase shift $\delta_i(s)$ fully determines the Omnes function $\Omega_i(s)$ and therefore the initial guess for each isobar.

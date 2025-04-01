@@ -17,9 +17,14 @@
 #include "utilities.hpp"
 #include "basis.hpp"
 #include "isobar.hpp"
+#include "solver.hpp"
+#include <boost/math/quadrature/gauss_kronrod.hpp>
 
 namespace iterateKT
 {
+    // Forward declare the option type
+    enum class option : unsigned int;
+
     // Forward declare for the typedef below
     class raw_amplitude;
 
@@ -27,7 +32,7 @@ namespace iterateKT
     using amplitude  = std::shared_ptr<raw_amplitude>;
 
     // This function serves as our "constructor"
-    template<class A>
+    template<class A=raw_amplitude>
     inline amplitude new_amplitude(kinematics kin, std::string id = "amplitude")
     {
         auto x = std::make_shared<A>(kin, id);
@@ -35,36 +40,42 @@ namespace iterateKT
     };
 
 
-    class raw_amplitude
+    class raw_amplitude : public solver
     {
         // -----------------------------------------------------------------------
         public:
 
         // Define only the masses here. 
         // The amplitude structure from quantum numbers will come later
-        raw_amplitude(kinematics xkin, std::string id)
-        : _kinematics(xkin), _id(id), _subtractions(std::make_shared<raw_subtractions>())
+        raw_amplitude(kinematics xkin, std::string id) : solver(xkin)
         {};
-
-        // Evaluate the full amplitude. This will 
+   
+        // Evaluate the full amplitude.
         virtual complex evaluate(complex s, complex t, complex u);
+
+        // Factor to divide by in width calculation
+        virtual double  helicity_factor(){ return 1; };
 
         // Need to specify how to combine the isobars into the full amplitude
         virtual complex prefactor_s(id iso_id, complex s, complex t, complex u){ return 0.; };
         virtual complex prefactor_t(id iso_id, complex s, complex t, complex u){ return 0.; };
         virtual complex prefactor_u(id iso_id, complex s, complex t, complex u){ return 0.; };
 
-        // Calculate one iteration of the KT equations
-        void iterate();
-        inline void iterate(unsigned int N){ for (int i = 0; i < N; i++) iterate(); };
-        
+        // Calculate widths in the physical decay region
+        double differential_width(double s, double t);
+        double differential_width(double s);
+        double width();
+
         // -----------------------------------------------------------------------
         // Utilities
 
-        // Retrieve or set the option flag.
-        // set_option can be overloaded if you want to do more than just save it      
-        inline int option(){ return _option; };
-        virtual inline void set_option(int x){ _option = x; for (auto f : _isobars) f->set_option(x); };
+        // Set and get the string id 
+        inline void set_name(std::string name){ _name = name; };
+        inline std::string name(){ return _name; };
+
+        // Pass an option flag and so something. By default we dont do anything 
+        // Can be overloaded to do whatever you want 
+        virtual inline void set_option(option opt){ return; }; 
 
         inline void set_parameters( std::vector<complex> pars)
         {
@@ -76,62 +87,19 @@ namespace iterateKT
             _subtractions->_values = pars;
         };
 
-        // -----------------------------------------------------------------------
-        // Isobar management
-        
-        // Retrieve an isobar with index i
-        inline isobar get_isobar(id i)
-        { 
-            for (auto f : _isobars) if (i == f->get_id()) return f;
-            return error("amplitude::get_isobar", "Index out of scope!", nullptr);
-        };
+        // Number of free parameters (used by fitters)
+        inline uint N_pars(){ return _subtractions->N_basis(); };
 
-        // Load up a new isobar
-        template<class T>
-        inline void add_isobar(int nsub, settings sets = T::default_settings())
-        { 
-            isobar new_iso = new_isobar<T>(_kinematics, _subtractions, nsub, sets);
-            
-            // Check for uniqueness
-            for (auto old_iso : _isobars)
-            {
-                if (old_iso->get_id() == new_iso->get_id())
-                {
-                    warning("add_isobar", "Attempted to add an isobar with non-unique identifier!");
-                    return;
-                };
-            };
-            _isobars.push_back(new_iso);
-
-            // Need to update _subtractions to know about new polynomials
-            for (int i = 0; i < nsub; i++)
-            {
-                _subtractions->_ids.push_back(new_iso->get_id());
-                _subtractions->_powers.push_back(i);
-            };
-        };
-
-        // Access the full vector of isobar pointers
-        inline std::vector<isobar> get_isobars(){return _isobars;};
+        inline std::vector<complex> get_pars() { return _subtractions->_values; };
 
         // -----------------------------------------------------------------------
-
         private:
 
-        // Kinematics object, contains all masses, angles, etc
-        kinematics _kinematics;
-
-        // Store isobars here to be called later
-        std::vector<isobar> _isobars;
-
-        // Store info regarding the subtraction polynomials
-        subtractions _subtractions;
-
-        // Options flag
-        int _option;
-
         // Id string to identify the amplitude with
-        std::string _id = "amplitude";
+        std::string _name = "amplitude";
+
+        // (inverse of) prefactors for the differential width
+        inline double prefactors(){ return 32*pow(2*PI*_kinematics->M(),3); }
     };
 }; // namespace iterateOKT
 
