@@ -86,7 +86,7 @@ namespace iterateKT
     // This class contains the entries, data, and options of producing a single plot/file
     // These can be generated from the plotter->make_plot() method which applies
     // all global settings
-    class plot 
+    class plot
     {
         public:
 
@@ -107,6 +107,7 @@ namespace iterateKT
 
         // Convert a data_set object to a plot_entry
         void add_data(std::array<std::vector<double>,2> x, std::array<std::vector<double>,2> y, jpacColor color = jpacColor::DarkGrey);
+        void add_data(std::vector<double> x, std::array<std::vector<double>,2> y, jpacColor color = jpacColor::DarkGrey);
 
         // Add a small offset to change the running color index
         inline void color_offset(unsigned n)
@@ -171,8 +172,9 @@ namespace iterateKT
         inline void set_logscale(bool x, bool y){ _xlog = x; _ylog = y; };
 
         // Set custom bounds for both axes
+        inline void set_xrange( std::array<double,2> x){ _xbounds = x; _customxrange = true; }
         inline void set_ranges( std::array<double,2> x,  std::array<double,2> y)
-        { _xbounds = x; _ybounds = y; _customranges = true; };
+        { _xbounds = x; _ybounds = y; _customxrange = true; _customyrange = true; };
 
         inline void set_legend(double x, double y){ _addlegend = true; _legendxcord = x; _legendycord = y; };
         inline void set_legend(bool x){_addlegend = x;};
@@ -228,8 +230,10 @@ namespace iterateKT
         friend class plotter;
 
         // Change linewidth and propagate it to all the curves in the plot
+        double _scale = 1.;
         inline void scale_linewidth(double x)
         {
+            _scale = x;
             for (auto entry : _entries)
             {
                 if (entry._isdata) entry._graph->SetLineWidth(plot_entry::_default_markerwidth * x);
@@ -239,6 +243,7 @@ namespace iterateKT
 
         inline void reset_linewidth()
         {
+            _scale = 1;
             for (auto entry : _entries)
             {
                 if (entry._isdata) entry._graph->SetLineWidth(plot_entry::_default_markerwidth);
@@ -297,7 +302,7 @@ namespace iterateKT
         std::string _xlabel = "", _ylabel = "";
         
         // Custom bounds for the different axes. 
-        bool _customranges = false;
+        bool _customxrange = false, _customyrange = false;
         std::array<double,2> _xbounds, _ybounds;
 
         // -----------------------------------------------------------------------
@@ -305,7 +310,7 @@ namespace iterateKT
 
         bool   _addlegend     = true;
         double _legendxcord   = 0.3, _legendycord   = 0.7;
-        double _legendxoffset = 0.3, _legendyoffset = 0.15, _legendyscale = 0.036;
+        double _legendxoffset = 0.3, _legendyoffset = 0.15, _legendyscale = 0.04;
 
         // Number of entries to expect on the legend
         // used to calculate the offset to be visually appealing

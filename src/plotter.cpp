@@ -154,6 +154,53 @@ namespace iterateKT
         };
     };
 
+    void plotter::combine(std::array<int,2> dims, std::vector<plot2D> hists, std::string filename)
+    {
+        // Make it the global default style
+        gROOT->SetStyle("jpacStyle");
+
+        // Get dimensions of the parition we're making
+        int xdim = dims[0], ydim = dims[1];
+        int Nmax = xdim * ydim; // Max number of plots we can accomodate
+
+        if (hists.size() > Nmax)
+        {
+            warning("plotter::combine", "Number of histograms recieved is larger than slots in given dimensions!");
+            return;
+        };
+
+        TCanvas *canvas = new TCanvas(filename.c_str(), filename.c_str(), 600*xdim, 600*ydim);
+        canvas->cd();
+        canvas->Divide(xdim, ydim, 1E-11, 1E-11);
+
+        // // If we have a lot of plots, adjust the linewidth so its readible
+        // // This formula is entirely made up but results are aesthetically fine
+        double scale = pow(0.85, std::max(xdim,ydim));
+
+        // Iterate over the plots, drawing each 
+        int index = 1; 
+        for (auto hist : hists)
+        {
+            // Move to sub-canvas
+            canvas->cd(index);
+            
+            gPad->UseCurrentStyle();
+            gPad->SetTopMargin(0.1);
+            gPad->SetRightMargin(0.16);
+            gPad->SetLeftMargin(0.14);
+            gPad->SetBottomMargin(0.13);
+            gPad->SetFixedAspectRatio();
+            hist.draw();
+            if (hist._inverted) TColor::InvertPalette();
+            index++;
+        };
+
+        canvas->cd();
+
+        // and print to file
+        canvas->Print(filename.c_str());
+    };
+
     void plotter::stack(std::vector<plot> plots, std::string filename)
     {
    // Make it the global default style

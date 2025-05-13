@@ -18,11 +18,10 @@ namespace iterateKT
 {
     using complex = std::complex<double>;
 
-    // Number of gaussian quadrature points to use in the various integrations
-    constexpr int N_GAUSS_CAUCHY     = 151;
-    constexpr int N_GAUSS_PSEUDO     = 61;
-    constexpr int N_GAUSS_OMNES      = 61;
-    constexpr int N_GAUSS_ANGULAR    = 31;
+    constexpr int N_GAUSS_CAUCHY  = 151;
+    constexpr int N_GAUSS_PSEUDO  = 61;
+    constexpr int N_GAUSS_OMNES   = 61;
+    constexpr int N_GAUSS_ANGULAR = 31;
 
     // ---------------------------------------------------------------------------
     // Mathematical constants 
@@ -47,6 +46,7 @@ namespace iterateKT
     const double M_PHI       = 1.01956;
     const double M_F2        = 1.2754;
     const double M_B1        = 1.229;
+    const double M_JPSI      = 3.096;
 
     // ------------------------------------------------------------------------------
     // NaN's, 0, and 1 for throwing errors with custom data types

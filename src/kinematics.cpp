@@ -21,15 +21,15 @@ namespace iterateKT
     complex raw_kinematics::kacser(complex s)
     {
         complex kappa = csqrt(1-sth()/s)*csqrt(pth()-s)*csqrt(rth()-s);
-        if (std::real(s) < sth() || !is_zero(std::imag(s))) return kappa;
+        if (real(s) < sth() || !is_zero(imag(s))) return kappa;
         
         // Handle the continuation piecewise
-        int region = (std::real(s) >= pth()) + (std::real(s) > rth());
+        int region = (real(s) >= pth()) + (real(s) > rth());
         switch (region)
         {
-            case 0: return +  std::abs(kappa);
-            case 1: return +I*std::abs(kappa);
-            case 2: return -  std::abs(kappa);
+            case 0: return +  abs(kappa);
+            case 1: return +I*abs(kappa);
+            case 2: return -  abs(kappa);
         };
         return NaN<complex>();
     };
@@ -40,7 +40,6 @@ namespace iterateKT
     {
         double Sth = sth();
         double Rth = rth();
-        if (s < Sth) return NaN<double>();
 
         int region; 
         region = (s >= Sth + xi[0])  // 1
@@ -94,8 +93,8 @@ namespace iterateKT
             complex tprime = t_curve(phi_i);
 
             phi.push_back(phi_i);
-            re.push_back( std::real(tprime) );
-            im.push_back( std::imag(tprime) );
+            re.push_back( real(tprime) );
+            im.push_back( imag(tprime) );
         };
 
         _re_tphi.SetData(phi, re);
@@ -122,7 +121,7 @@ namespace iterateKT
         if (s > rth() || s < pth()) return error("kinematics::phi_plus", 
                                                    "Outside egg region!", NaN<double>());
         double cosine = (Sigma()-s)*sqrt(s)/(M2()-m2())/m()/2;
-        if (!are_equal(std::abs(cosine), 1)) return TMath::ACos(cosine);
+        if (!are_equal(abs(cosine), 1)) return TMath::ACos(cosine);
         return (cosine > 0) ? 0 : PI;
     };
     double raw_kinematics::phi_minus(double s)
@@ -144,5 +143,31 @@ namespace iterateKT
         if (cosphi < 0) return (Sigma()/3)*(1-2*cos(theta))/2/cosphi;
         else return (Sigma()/3)*(1+2*cos(theta+PI/3.))/2/cosphi;
     };  
+
+    // -----------------------------------------------------------------------
+    plot2D raw_kinematics::new_dalitz_plot(plotter & pltr, int N)
+    {
+        std::array<std::vector<double>,2> dalitz_boundary;
+        // Go clockwise around the dalitz region, first tmax
+        for (int i = 0; i <= N; i++)
+        {
+            double s = sth() + (pth() - sth())*i/double(N);
+            double t = real(t_plus(s));
+    
+            dalitz_boundary[0].push_back(s); dalitz_boundary[1].push_back(t);
+        };
+        // then tmin going backwards in s
+        for (int i = 0; i <= N; i++)
+        {
+            double s = pth() + (sth() - pth())*i/double(N);
+            double t = real(t_minus(s));
+    
+            dalitz_boundary[0].push_back(s); dalitz_boundary[1].push_back(t);
+        };
+
+        plot2D p = pltr.new_plot2D();
+        p.set_region(dalitz_boundary);
+        return p;
+    };
 
 }; // namespace iterateKT

@@ -17,6 +17,7 @@
 #include "kinematics.hpp"
 #include "iteration.hpp"
 #include "settings.hpp"
+#include "phase_shift.hpp"
 #include "basis.hpp"
 #include "data_set.hpp"
 #include "timer.hpp"
@@ -56,7 +57,17 @@ namespace iterateKT
 
         // Default constructor
         raw_isobar(isobar_args args) 
-        : _kinematics(args._kin), _settings(args._sets), _subtractions(args._subs), _id(args._id), _name(args._name)
+        : _kinematics(args._kin), _settings(args._sets), _subtractions(args._subs), 
+                                  _id(args._id), _name(args._name)
+        { 
+            // When we have "unsubtracted" we assume we do have one but no polynomial
+            _max_sub = (args._maxsub == 0) ? 1 : args._maxsub;
+            initialize();
+        };
+
+        raw_isobar(isobar_args args, phase_args phase_args) 
+        : _kinematics(args._kin), _settings(args._sets), _subtractions(args._subs), 
+                                  _id(args._id), _name(args._name), _delta(phase_args)
         { 
             // When we have "unsubtracted" we assume we do have one but no polynomial
             _max_sub = (args._maxsub == 0) ? 1 : args._maxsub;
@@ -66,15 +77,20 @@ namespace iterateKT
         // -----------------------------------------------------------------------
         // Mandatory virtual methods which need to be overriden
 
-        // The power (p q)^n that appears in angular momentum barrier factor
+        // The power (p q)^2*n+1 that appears in angular momentum barrier factor
         // This determines the type of matching required at pseudothreshold
-        virtual unsigned int singularity_power() = 0;
+        virtual unsigned int angular_momentum() = 0;
 
-        // Elastic phase shift which provides the intial guess
-        virtual double phase_shift(double s) = 0;
+        // Elastic phase shift which provides the initial guess
+        // By default we assume the _delta was imported with an interpolation
+        virtual double phase_shift(double s){ return _delta(s); };
 
         // Kernel which appears in the angular average
-        virtual complex ksf_kernel(id iso_id, complex s, complex t) = 0;
+        virtual complex ksf_kernel(id iso_id, complex s, complex t){ return 0.; };
+
+        // This is an extra function to check if to calculate an inhomogeneity at all
+        // Will return false unless overriden
+        virtual bool calculate_inhomogeneity(){ return true; };
 
         // ----------------------------------------------------------------------- 
         // Things related to dispersion integrals and such
@@ -83,10 +99,25 @@ namespace iterateKT
         // This is the homogenous solution and the start of our iterative procedure
         complex omnes(complex x);
 
+        // Given a phase shift, this is the LHC piece (numerator)
+        inline double LHC(double s)
+        { 
+            if (!_lhc_interpolated) interpolate_lhc();
+            return (s > _kinematics->sth()) ? _lhc.Eval(s) : 0.; 
+        };
+                
         // Output a basis_function from a given iteration
         // Without an iter_id we just take the latest iteration
         complex basis_function(unsigned int iter_id, unsigned int basis_id, complex x);
         complex basis_function(unsigned int basis_id, complex x);
+
+        // Calculate the first and second derivatives of basis function at the subraction point (s=0)
+        template<uint order>
+        inline complex basis_derivative(uint basis_id, double x, double eps)
+        {
+            auto f = [this,basis_id](double s){ return basis_function(basis_id, s); };
+            return central_difference_derivative<complex>(order, f, x, eps);
+        };
 
         // Take in an array of isobars and use their current state to calculate the next disc
         basis_grid calculate_next(std::vector<isobar> & previous_list);
@@ -99,8 +130,7 @@ namespace iterateKT
         inline complex evaluate(complex s)
         {
             complex sum = 0;
-            for (int i = 0; i < _subtractions->N_basis(); i++) 
-            sum += _subtractions->get_par(i)*basis_function(i, s);
+            for (int i = 0; i < _subtractions->N_basis(); i++) sum += _subtractions->get_par(i)*basis_function(i, s);
             return sum;
         };
 
@@ -112,12 +142,16 @@ namespace iterateKT
         void import_iteration(std::string filename)
         {
             auto imported = import_data<2*N+1>(filename, true);
-            _s_list = std::move(imported[0]);
+            _s_list       = std::move(imported[0]);
+
+            if (_s_list.back() < _settings._cutoff) 
+            fatal("import_isobar", 
+                  "Cutoff set to higher than imported data! Will cause interpolation errors.");
 
             basis_grid grid;
-            grid._n_singularity = singularity_power()+1;
-            grid._s_list = _s_list;
-            grid._s_around_pth = _s_around_pth;
+            grid._n_singularity = 2*angular_momentum()+1;
+            grid._s_list        = _s_list;
+            grid._s_around_pth  = _s_around_pth;
             
             for (int i = 0; i < N; i++)
             {
@@ -153,14 +187,7 @@ namespace iterateKT
 
         // Integrator and interpolator settings
         settings _settings;
-        
-        // Given a phase shift, this is the LHC piece (numerator)
-        inline double LHC(double s)
-        { 
-            if (!_lhc_interpolated) interpolate_lhc();
-            return (s > _kinematics->sth()) ? _lhc.Eval(s) : 0.; 
-        };
-        
+
         // Calculate the angular integral along a straight line
         // Bounds arguments should be {t_minus, t_plus, ieps perscription}
         complex linear_segment(unsigned int basis_id, std::array<double,3> bounds, double s, std::vector<isobar> & previous_list);
@@ -169,7 +196,8 @@ namespace iterateKT
 
         // Save interpolation of the discontinuity calculated elsewhere into the list of iterations
         inline void save_iteration(basis_grid & grid){ _iterations.push_back(new_iteration( _kinematics, grid, _settings)); };
-
+        inline void skip_iteration(){ _iterations.push_back(new_iteration()); };
+        
         // -----------------------------------------------------------------------
         private:
 
@@ -189,6 +217,9 @@ namespace iterateKT
         // Number of subtractions
         unsigned int _max_sub = 1, _n_basis = 1;
         subtractions _subtractions;
+
+        // Saved interpolation of phase_shifts
+        iterateKT::phase_shift _delta;
 
         // Initialize the 'zeroth' iteration by evaluating just the omnes function
         void initialize();

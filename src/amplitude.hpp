@@ -18,6 +18,8 @@
 #include "basis.hpp"
 #include "isobar.hpp"
 #include "solver.hpp"
+#include "plotter.hpp"
+#include "plot2D.hpp"
 #include <boost/math/quadrature/gauss_kronrod.hpp>
 
 namespace iterateKT
@@ -39,7 +41,6 @@ namespace iterateKT
         return std::static_pointer_cast<raw_amplitude>(x);
     };
 
-
     class raw_amplitude : public solver
     {
         // -----------------------------------------------------------------------
@@ -47,14 +48,18 @@ namespace iterateKT
 
         // Define only the masses here. 
         // The amplitude structure from quantum numbers will come later
-        raw_amplitude(kinematics xkin, std::string id) : solver(xkin)
+        raw_amplitude(kinematics xkin, std::string id) : solver(xkin), _name(id)
         {};
    
         // Evaluate the full amplitude.
         virtual complex evaluate(complex s, complex t, complex u);
 
+        // If we only have two mandelstams and both are real
+        // output u from the on-shell condition
+        inline  complex evaluate(double s, double t){ return evaluate(s, t, _kinematics->Sigma() - s - t); };
+
         // Factor to divide by in width calculation
-        virtual double  helicity_factor(){ return 1; };
+        virtual double  combinatorial_factor(){ return 1; };
 
         // Need to specify how to combine the isobars into the full amplitude
         virtual complex prefactor_s(id iso_id, complex s, complex t, complex u){ return 0.; };
@@ -65,6 +70,10 @@ namespace iterateKT
         double differential_width(double s, double t);
         double differential_width(double s);
         double width();
+
+        // (inverse of) prefactors for the differential width
+        inline double prefactors()
+        { return 32*pow(2*PI*_kinematics->M(),3)*combinatorial_factor(); }
 
         // -----------------------------------------------------------------------
         // Utilities
@@ -87,19 +96,42 @@ namespace iterateKT
             _subtractions->_values = pars;
         };
 
+        // Sometimes we want to do an intermediate step with the pars being passed around by a fitter
+        // If this is the case overload this function otherwise it does nothing by default
+        virtual inline std::vector<complex> process_fitter_parameters(std::vector<complex> pars)
+        { return pars; };
+
         // Number of free parameters (used by fitters)
         inline uint N_pars(){ return _subtractions->N_basis(); };
 
-        inline std::vector<complex> get_pars() { return _subtractions->_values; };
+        // Get a vector of the currently saved subtraction parameters
+        inline std::vector<complex> get_pars()       { return _subtractions->_values; };
+        inline std::vector<complex> get_parameters() { return get_pars(); };
+
+        // -----------------------------------------------------------------------
+        // Automate making plots of the amplitude
+
+        // Make standard plots in the entire decay region
+        // output[0] = Re(A)
+        // output[1] = Im(A)
+        std::vector<plot2D> plot_ReIm(plotter & pltr, std::string units = "", int N = 100);
+
+        // Only plot |A|
+        plot2D plot_dalitz(plotter & pltr, std::string units = "", int N = 100);
+
+        // -----------------------------------------------------------------------
+        // Calculate Daltiz plot parameters from amplitude
+        // We use the conventions and notation of the PDG for Kaon decays
+        // see ``Dalitz Plot Parameters for K -> 3pi decays" in RPP
+
+        // Output in order {g, h, j, k, f}
+        std::array<double,5> get_dalitz_parameters(double eps = 1E-5, double m2 = M_PION*M_PION);
 
         // -----------------------------------------------------------------------
         private:
 
         // Id string to identify the amplitude with
         std::string _name = "amplitude";
-
-        // (inverse of) prefactors for the differential width
-        inline double prefactors(){ return 32*pow(2*PI*_kinematics->M(),3); }
     };
 }; // namespace iterateOKT
 

@@ -32,14 +32,14 @@
 *.app
 
 # Runtime directories
-/build/
-/test/
-/.vscode/
-/bin/
-/lib/
-physics/phase_shifts/bern/
-scripts/tests/comparisons/
-/dev/
+build/
+test/
+.vscode/
+bin/
+lib/
+scripts/tests/
+dev/
+kaon/basis_functions
 
 # Outputs 
 *.pdf
@@ -47,3 +47,8 @@ scripts/tests/comparisons/
 *.ps
 *.root
 *.dat
+*.txt
+
+# hide non-public data
+physics/phase_shifts/bern/
+data/COMPASS/raw_files

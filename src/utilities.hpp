@@ -18,11 +18,18 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <functional>
 
 #include "constants.hpp"
 
 namespace iterateKT
 {
+    // ---------------------------------------------------------------------------
+    // Angles
+    
+    inline double degrees(double radians){ return radians*DEG2RAD; };
+    inline double radians(double degrees){ return degrees/DEG2RAD; };
+
     // ---------------------------------------------------------------------------
     // Out of the box std::complex<double> doesnt play well with ints. Here we explicitly
     // give it the functionality we want
@@ -111,15 +118,15 @@ namespace iterateKT
 
     // Only way to get a double or int Kallen is if all inputs are double/int
     template<typename T>
-    inline T Kallen(T x, T y, T z)
+    inline T kallen(T x, T y, T z)
     {
         return x*x + y*y + z*z - 2. * (x*y + x*z + y*z);
     };
 
     // If any of them are complex, return complex
-    inline complex Kallen(complex z, double a, double b) { return Kallen<complex>(z, complex(1,0)*a, complex(1,0)*b); };
-    inline complex Kallen(double a, complex z, double b) { return Kallen<complex>(complex(1,0)*a, z, complex(1,0)*b); };
-    inline complex Kallen(double a, double b, complex z) { return Kallen<complex>(complex(1,0)*a, complex(1,0)*b, z); };
+    inline complex kallen(complex z, double a, double b) { return kallen<complex>(z, complex(1,0)*a, complex(1,0)*b); };
+    inline complex kallen(double a, complex z, double b) { return kallen<complex>(complex(1,0)*a, z, complex(1,0)*b); };
+    inline complex kallen(double a, double b, complex z) { return kallen<complex>(complex(1,0)*a, complex(1,0)*b, z); };
 
     inline int sign(double x){ return (x >= 0) ? +1 : -1; }
 
@@ -129,12 +136,12 @@ namespace iterateKT
 
     inline bool are_equal(double a, double b)
     {
-        return ( std::abs(a - b) < EPS );
+        return ( abs(a - b) < EPS );
     }
 
     inline bool are_equal(double a, double b, double tol)
     {
-        return ( std::abs(a - b) < tol );
+        return ( abs(a - b) < tol );
     }
 
     // Same thing for comparing complex doubles
@@ -153,14 +160,14 @@ namespace iterateKT
     template<typename T>
     inline bool is_zero(T a)
     {
-        return (std::abs(a) < EPS);
+        return (abs(a) < EPS);
     };
 
     // Aliases for special cases of the above
     template<typename T>
     inline bool is_zero(T a, double tol)
     {
-        return (std::abs(a) < tol);
+        return (abs(a) < tol);
     };
 
     inline bool is_odd(int a)
@@ -266,12 +273,12 @@ namespace iterateKT
         std::cout << std::setw(N) << x << std::endl;
     };
 
-    template <uint N=PRINT_SPACING, typename First, typename... Rest>
+    template <uint NFIRST=PRINT_SPACING, uint NREST=NFIRST, typename First, typename... Rest>
     inline void print(First first, Rest... rest)
     {
         std::cout << std::boolalpha << std::left << std::setprecision(9);  
-        std::cout << std::setw(N) << first;
-        print(rest...);
+        std::cout << std::setw(NFIRST) << first;
+        print<NREST>(rest...);
     } 
 
     template<uint N=PRINT_SPACING, typename T>
@@ -317,17 +324,17 @@ namespace iterateKT
     // We assume theyre all the same size, if not this breaks and its not our fault
 
     template<int N>
-    inline void print_to_file(std::string outname, std::array<std::vector<double>,N> data)
+    inline void print_to_file(std::string outname, std::array<std::vector<double>,N> data, int precision = 12)
     {
         std::ofstream out;
         out.open(outname);
-
+        int spacing = precision + 10;
         for (uint j = 0; j < data[0].size(); j++)
         {
-            out << std::left;
+            out << std::left << std::setprecision(precision);
             for (uint i = 0; i < N; i++)
             {
-                out << std::setw(PRINT_SPACING) << data[i][j];
+                out << std::setw(spacing) << data[i][j];
             }
             out << std::endl;
         };
@@ -337,15 +344,15 @@ namespace iterateKT
     };
 
     template<int N>
-    inline void print_to_file(std::string outname, std::array<std::string,N> headers, std::array<std::vector<double>,N> data)
+    inline void print_to_file(std::string outname, std::array<std::string,N> headers, std::array<std::vector<double>,N> data, int precision = 12)
     {
         std::ofstream out;
         out.open(outname);
-
-        out << std::left << std::setw(PRINT_SPACING) << "#" + headers[0];
+        int spacing = precision + 10;
+        out << std::left << std::setprecision(precision) << std::setw(spacing) << "#" + headers[0];
         for (int i = 1; i < N; i++)
         {
-            out << std::setw(PRINT_SPACING) << headers[i]; 
+            out << std::setw(spacing) << headers[i]; 
         };
         out << std::endl;
 
@@ -354,7 +361,7 @@ namespace iterateKT
             out << std::left;
             for (uint i = 0; i < N; i++)
             {
-                out << std::setw(PRINT_SPACING) << data[i][j];
+                out << std::setw(spacing) << data[i][j];
             }
             out << std::endl;
         };
@@ -379,6 +386,9 @@ namespace iterateKT
         return std::string(env);  
     };
 
+    // Another directory that comes up often is the data folder
+    inline std::string data_dir(){ return main_dir() + "/data/"; };
+
     // Same as above but looks for DESKTOP
     inline std::string desktop()
     {
@@ -396,9 +406,10 @@ namespace iterateKT
     // Element-wise operations on data vectors
 
     // Given two vector<double>s of the same size, calculate the average element wise
-    inline std::vector<double> operator*( std::vector<double> lhs, double c)
+    template<typename T>
+    inline std::vector<T> operator*( std::vector<T> lhs, double c)
     {
-        std::vector<double> result;
+        std::vector<T> result;
         for (int i = 0; i < lhs.size(); i++)
         {
             result.push_back( lhs[i]*c );
@@ -406,9 +417,10 @@ namespace iterateKT
         return result;
     };
 
-    inline std::vector<double> operator*(double c, std::vector<double> rhs)
+    template<typename T>
+    inline std::vector<T> operator*(double c, std::vector<T> rhs)
     {
-        std::vector<double> result;
+        std::vector<T> result;
         for (int i = 0; i < rhs.size(); i++)
         {
             result.push_back( c*rhs[i] );
@@ -416,9 +428,10 @@ namespace iterateKT
         return result;
     };
 
-    inline std::vector<double> operator/( std::vector<double> lhs, double c)
+    template<typename T>
+    inline std::vector<T> operator/( std::vector<T> lhs, double c)
     {
-        std::vector<double> result;
+        std::vector<T> result;
         for (int i = 0; i < lhs.size(); i++)
         {
             result.push_back( lhs[i]/c );
@@ -426,70 +439,69 @@ namespace iterateKT
         return result;
     };
 
-    inline std::vector<double> operator-(const std::vector<double> & x)
+    template<typename T>
+    inline std::vector<T> operator-(const std::vector<T> & x)
     {
-        return -1 * x;
+        return -1. * x;
     };
 
-    inline std::vector<double> operator/=(const std::vector<double> & x, double c)
+    template<typename T>
+    inline std::vector<T> operator/=(const std::vector<T> & x, double c)
     {
         return x/c;
     };
 
-    inline std::vector<double> operator*=(const std::vector<double> & x, double c)
+    template<typename T>
+    inline std::vector<T> operator*=(const std::vector<T> & x, double c)
     {
         return x*c;
     };
     
-    inline std::vector<double> operator+(std::vector<double> lhs, std::vector<double> rhs)
+    template<typename T>
+    inline std::vector<T> operator+(std::vector<T> lhs, std::vector<T> rhs)
     {
         if (lhs.size() != rhs.size()) return error("Attempted to add two vectors of different sizes!", std::vector<double>());
 
-        std::vector<double> result;
-        for (uint i = 0; i < lhs.size(); i++)
-        {
-            result.push_back( lhs[i] + rhs[i] );
-        };
+        std::vector<T> result;
+        for (uint i = 0; i < lhs.size(); i++) result.push_back( lhs[i] + rhs[i] );
         return result;
     };
 
-    inline std::vector<double> operator-(std::vector<double> lhs, std::vector<double> rhs)
+    template<typename T>
+    inline std::vector<T> operator-(std::vector<T> lhs, std::vector<T> rhs)
     {
         if (lhs.size() != rhs.size()) return error("Attempted to add two vectors of different sizes!", std::vector<double>());
 
         std::vector<double> result;
-        for (uint i = 0; i < lhs.size(); i++)
-        {
-            result.push_back( lhs[i] - rhs[i] );
-        };
+        for (uint i = 0; i < lhs.size(); i++) result.push_back( lhs[i] - rhs[i] );
         return result;
     };
 
     // Add a constant to all elements of a vector
-    inline std::vector<double> operator+(double lhs, std::vector<double> rhs)
+    template<typename T>
+    inline std::vector<T> operator+(double lhs, std::vector<T> rhs)
     {
-        std::vector<double> result;
-        for (uint i = 0; i < rhs.size(); i++)
-        {
-            result.push_back( lhs + rhs[i] );
-        };
+        std::vector<T> result;
+        for (uint i = 0; i < rhs.size(); i++) result.push_back( lhs + rhs[i] );
         return result;
     };   
-    inline std::vector<double> operator-(double lhs, std::vector<double> rhs) 
+    
+    template<typename T>
+    inline std::vector<T> operator-(double lhs, std::vector<T> rhs) 
     {
         return lhs + (-rhs);
     };
 
-    inline std::vector<double> operator+(std::vector<double> lhs, double rhs)
+    template<typename T>
+    inline std::vector<T> operator+(std::vector<T> lhs, double rhs)
     {
-        std::vector<double> result;
-        for (uint i = 0; i < lhs.size(); i++)
-        {
-            result.push_back( rhs + lhs[i] );
-        };
+        std::vector<T> result;
+        for (uint i = 0; i < lhs.size(); i++) result.push_back( rhs + lhs[i] );
         return result;
     };
-    inline std::vector<double> operator-(std::vector<double> lhs, double rhs) 
+
+    template<typename T>
+    inline std::vector<T> operator-(std::vector<T> lhs, double rhs) 
     {
         return lhs + (-rhs);
     };
@@ -505,7 +517,126 @@ namespace iterateKT
         }
         return out;
     };
-    inline std::vector<double> square(std::vector<double> in){ return multiply_elementwise(in, in); };
+    inline std::vector<double> square_elementwise(std::vector<double> in){ return multiply_elementwise(in, in); };
+
+    inline std::vector<double> real(std::vector<complex> vx)
+    {
+        std::vector<double> out;
+        for (auto x : vx) out.push_back(real(x));
+        return out;
+    };
+    inline std::vector<double> imag(std::vector<complex> vx)
+    {
+        std::vector<double> out;
+        for (auto x : vx) out.push_back(real(x));
+        return out;
+    };
+
+    // ---------------------------------------------------------------------------
+    // Simple functions to calculate numerical derivatives up to error ~ h^4
+    // Coefficients taken from https://en.wikipedia.org/wiki/Finite_difference_coefficient
+    
+    // Central difference 
+    template<typename T> 
+    inline T central_difference_derivative(uint n, std::function<T(double)> F, double x, double h = 1E-3)
+    {
+        T f3m, f2m, fm, f, fp, f2p, f3p;
+        f   = F(x);
+        fp  = F(x+h),    fm = F(x-h);
+        f2p = F(x+2*h), f2m = F(x-2*h);
+        if (n >= 3) { f3p = F(x+3*h); f3m = F(x-3*h); };
+        
+        T num;
+        switch (n)
+        {
+            case 0  : return F(x);
+            case 1  : num =          +f2m/12  -2*fm/3          +2*fp/3   -f2p/12;          break;
+            case 2  : num =          -f2m/12  +4*fm/3  -5*f/2  +4*fp/3   -f2p/12;          break;
+            case 3  : num = +f3m/8   -f2m    +13*fm/8         -13*fp/8   +f2p     -f3p/8;  break;
+            case 4  : num = -f3m/6 +2*f2m    -13*fm/2 +28*f/3 -13*fp/2 +2*f2p     -f3p/6;  break;
+            default : 
+            {
+                warning("central_difference_derivative", "Order n = "+to_string(n)+" derivatives not implemented!"); 
+                return NaN<T>();
+            };
+        };
+        return num / pow(h, n);
+    };
+
+    // Mixed central derivative of a function of 2 variables d2F(x,y)/dxdy
+    template<typename T>
+    inline T mixed_partial_derivatives(std::function<T(double,double)> F, std::array<double,2> xs, double e)
+    {
+        double x = xs[0], y = xs[1];
+        T f2p2p = F(x+2*e,y+2*e), f2p2m = F(x+2*e,y-2*e), f2m2p = F(x-2*e,y+2*e), f2m2m = F(x-2*e,y-2*e);
+        T f2pp  = F(x+2*e,y+e),   f2pm  = F(x+2*e,y-e),   f2mp  = F(x-2*e,y+e),   f2mm  = F(x-2*e,y-e);
+        T fp2p  = F(x+e,y+2*e),   fm2p  = F(x-e,y+2*e),   fp2m  = F(x+e,y-2*e),   fm2m  = F(x-e,y-2*e);
+        T fpp   = F(x+e,y+e),     fpm   = F(x+e,y-e),     fmp   = F(x-e,y+e),     fmm   = F(x-e,y-e);
+        return (8*(fp2m+f2pm+f2mp+fm2p)     -  8*(fm2m+f2mm+fp2p+f2pp)
+                 -(f2p2m+f2m2p-f2m2m-f2p2p) + 64*(fmm+fpp-fpm-fmp))/144/e/e;
+    };
+
+    // Forward difference
+    template<typename T> 
+    inline T forward_difference_derivative(uint n, std::function<T(double)> F, double x, double h = 1E-3)
+    {
+        if (n == 0) return F(x);
+
+        std::vector<double> c;
+        switch (n)
+        {
+            // O(h^4)
+            case 1  : c = {-25./12, 4., -3., 4./3, -1./4}; break;
+            case 2  : c = {15./4, -77./6, 107./6, -13., 61./12, -5./6}; break;
+            case 3  : c = {-49./8, 29., -461./8, 62., -307./8, 13., -15./8}; break;
+            case 4  : c = {28./3, -111./2, 142., -1219/6., 176., -185./2, 82./3 ,-7./2}; break;
+
+            // // O(h^6)
+            // case  1 : c = {-49./20, 6., -15./2, 20./3, -15./4, 6./5, -1./6}; break;
+            // case  2 : c = {469./90, -223./10, 879./20, -949./18, 41., -201./10, 1019./180, -7./10}; break;
+            // case  3 : c = {-801./80, 349./6, -18353./120, 2391./10, -1457./6, 4891./30, -561./8, 527./30, -469./240}; break;
+            default : 
+            {
+                warning("forward_difference_derivative", "Order n = "+to_string(n)+" derivatives not implemented!"); 
+                return NaN<T>();
+            };
+        };
+        T num = 0;
+        for (int i = 0; i < c.size(); i++) num += c[i] * F(x+i*h);
+
+        return num / pow(h, n);
+    };
+    
+    // and finally backward finite difference
+    template<typename T> 
+    inline T backward_difference_derivative(uint n, std::function<T(double)> F, double x, double h = 1E-3)
+    {
+        if (n == 0) return F(x);
+
+        std::vector<double> c;
+        switch (n)
+        {
+            // These are O(h^4)
+            case 1  : c = {-25./12, 4., -3., 4./3, -1./4}; break;
+            case 2  : c = {15./4, -77./6, 107./6, -13., 61./12, -5./6}; break;
+            case 3  : c = {-49./8, 29., -461./8, 62., -307./8, 13., -15./8}; break;
+            case 4  : c = {28./3, -111./2, 142., -1219/6., 176., -185./2, 82./3 ,-7./2}; break;
+
+            // // These are O(h^6)
+            // case  1 : c = {-49./20, 6., -15./2, 20./3, -15./4, 6./5, -1./6}; break;
+            // case  2 : c = {469./90, -223./10, 879./20, -949./18, 41., -201./10, 1019./180, -7./10}; break;
+            // case  3 : c = {-801./80, 349./6, -18353./120, 2391./10, -1457./6, 4891./30, -561./8, 527./30, -469./240}; break;
+            default : 
+            {
+                warning("forward_difference_derivative", "Order n = "+to_string(n)+" derivatives not implemented!"); 
+                return NaN<T>();
+            };
+        };
+        T num = 0;
+        for (int i = 0; i < c.size(); i++) num += c[i] * F(x-i*h);
+
+        return pow(-1, n) * num / pow(h, n);
+    };
 
 };
 // ---------------------------------------------------------------------------

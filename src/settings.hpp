@@ -18,7 +18,7 @@ namespace iterateKT
     struct settings
     {
         settings(){};
-
+        
         // Number of subdivisions for adaptive integrator 
         // These are only looked at if the appropriate flag above is true
         double _omnes_cutoff     = std::numeric_limits<double>::infinity();
@@ -32,6 +32,7 @@ namespace iterateKT
 
         // The infinitesimal to use for ieps inside Cauchy kernels
         double _infinitesimal      = 1E-5;
+        double _derivative_h       = 1E-3;
 
         // Interval +- regular thresholds around which to remove singularities
         std::array<double,3> _matching_intervals = {0.05, 0.05, 0.05};

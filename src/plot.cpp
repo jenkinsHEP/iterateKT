@@ -40,7 +40,7 @@ namespace iterateKT
 
     void plot::draw()
     {
-        bool add_padding = _customranges && std::abs(_ybounds[0]) < 0.09 && std::abs(_ybounds[1]) < 0.09;
+        bool add_padding = _customyrange && std::abs(_ybounds[0]) < 0.09 && std::abs(_ybounds[1]) < 0.09;
         if (add_padding) 
         {
             auto style = gROOT->GetStyle("jpacStyle");
@@ -88,17 +88,27 @@ namespace iterateKT
 
         mg->GetXaxis()->CenterTitle(true);
         mg->GetYaxis()->CenterTitle(true);
+        mg->GetYaxis()->SetMaxDigits(2);
         _canvas->Modified();
 
         double ylow, yhigh, xlow, xhigh;
-        if (_customranges)
+        if (_customxrange)
         {
             mg->GetXaxis()->SetLimits(   _xbounds[0], _xbounds[1]);
-            mg->GetYaxis()->SetRangeUser(_ybounds[0], _ybounds[1]);
+            xlow = _xbounds[0]; xhigh = _xbounds[1];
+        };
+
+        if (_customyrange)
+        {
+                        mg->GetYaxis()->SetRangeUser(_ybounds[0], _ybounds[1]);
             mg->SetMinimum(_ybounds[0]);
             mg->SetMaximum(_ybounds[1]);
             ylow = _ybounds[0]; yhigh = _ybounds[1];
-            xlow = _xbounds[0]; xhigh = _xbounds[1];
+        }
+        else
+        {
+            ylow  = mg->GetYaxis()->GetXmin();
+            yhigh = mg->GetYaxis()->GetXmax();
         };
 
         double xmin = mg->GetXaxis()->GetXmin();
@@ -107,7 +117,7 @@ namespace iterateKT
         for (auto vline : _vlines)
         {
             auto vert = new TLine(vline._value, ylow, vline._value, yhigh);
-            vert->SetLineWidth(0.7*plot_entry::_default_linewidth);
+            vert->SetLineWidth(0.7*_scale*plot_entry::_default_linewidth);
             vert->SetLineStyle(vline._linestyle);
             vert->SetLineColorAlpha(vline._color, 0.7);
             vert->Draw();
@@ -116,7 +126,7 @@ namespace iterateKT
         for (auto hline : _hlines)
         {
             auto hori = new TLine(xlow, hline._value, xhigh, hline._value);
-            hori->SetLineWidth(0.7*plot_entry::_default_linewidth);
+            hori->SetLineWidth(0.7*_scale*plot_entry::_default_linewidth);
             hori->SetLineStyle(hline._linestyle);
             hori->SetLineColorAlpha(hline._color, 0.7);
             hori->Draw();
@@ -151,6 +161,25 @@ namespace iterateKT
         x  = &(vx[0][0]);        y  = &(vy[0][0]);
         dx = &(vx[1][0]);       dy  = &(vy[1][0]);
         TGraph *graph = new TGraphErrors(vx[0].size(), x, y, dx, dy);
+
+        entry_style style;
+        style._style = 20 + _Ndata;
+        style._color = color;
+        style._draw_opt = "P";
+        style._add_to_legend = false;
+
+        _Ndata++;
+        _Nlegend++;
+
+        _entries.push_front(plot_entry(graph, style, true));
+    };
+
+    void plot::add_data(std::vector<double> vx, std::array<std::vector<double>,2> vy, jpacColor color)
+    {
+        double *x, *y, *dy;
+        x  = &(vx[0]);        y  = &(vy[0][0]);
+                             dy  = &(vy[1][0]);
+        TGraph *graph = new TGraphErrors(vx.size(), x, y, nullptr, dy);
 
         entry_style style;
         style._style = 20 + _Ndata;

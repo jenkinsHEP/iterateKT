@@ -14,22 +14,31 @@
 
 #include <fstream>
 #include <sstream>
+#include <map>
 
 namespace iterateKT
 {
+    // Forward declare the option type
+    enum class option : unsigned int;
+
     struct data_set
     {
         // Number of data points
-        int _N = 0;
+        uint _N = 0;
 
         // String id 
         std::string _id = "data_set";
 
         // What is being represented by data
-        int _type;
+        uint _type;
         
         // vectors to store independent and dependent variables and their errors
         std::vector<double> _x, _y, _z, _dx, _dy, _dz;
+
+        // Store a map in which to store any additional information related to the data_set
+        std::map<std::string, double> _extras;
+
+        option _option;
 
         // If we want a data entry in the legend
         bool _add_to_legend = true;
