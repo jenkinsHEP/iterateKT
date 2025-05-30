@@ -7,23 +7,98 @@
 // Email:        daniel.winney@gmail.com
 // ------------------------------------------------------------------------------
 
-#ifndef KAON_DATA_HPP
-#define KAON_DATA_HPP
+#ifndef KAON_FITTER_HPP
+#define KAON_FITTER_HPP
 
-#include "constants.hpp"
-#include "amplitudes/kaon.hpp"
-#include "data_set.hpp"
+#include "K_3pi/data.hpp"
 
 namespace iterateKT { namespace kaon
 {
+    // Different masses for isospin projectionss
+    const double M_KAON_PM  = 0.493677;
+    const double M_KAON_0   = 0.497611;
+    const double M_KAON_AVG = (M_KAON_PM + M_KAON_0)/2;
+    const double M_PION_PM  = 0.13957039;
+    const double M_PION_0   = 0.1349768;
+    const double M_PION_AVG = (M_PION_PM + M_PION_0)/2;
+
+    // Because the kaon mass is so smal, the mass splittings between isospin projections
+    // make a noticable difference in the phase-space.
+    // So, even though we calculate KT isobars in isospin limit, we can integrate with the realistic 
+    complex integrate_over_physical_phasespace(amplitude amp, std::array<option,2> opts, std::array<double,4> ms)
+    {
+        using namespace boost::math::quadrature;
+        double mK = ms[0], m1 = ms[1], m2 = ms[2], m3 = ms[3];
+        double sth = norm(m2+m3), pth = norm(mK-m1);
+        double sigma = mK*mK + m1*m1 + m2*m2 + m3*m3;
+        auto dGamma = [amp,sigma,mK,m1,m2,m3,opts](double s)
+        {
+            double kappa = sqrt(kallen(s, mK*mK, m1*m1))*sqrt(kallen(s,m2*m2,m3*m3))/s;
+            double tmin  = (sigma - s - kappa)/2, tmax  = (sigma - s + kappa)/2;
+            auto d2Gamma = [amp,s,opts](double t)
+            {
+                complex A, B;
+                amp->set_option(opts[0]); A = amp->evaluate(s,t);
+                if  (opts[0] == opts[1]) return conj(A)*A;
+                amp->set_option(opts[1]); B = amp->evaluate(s,t);  
+                return conj(A)*B;     
+            };
+            return gauss_kronrod<double,15>::integrate(d2Gamma, tmin, tmax, 0, 1.E-9, NULL);
+        };
+        return gauss_kronrod<double,15>::integrate(dGamma, sth, pth, 0, 1.E-9, NULL);
+    };
+
+    double physical_width(amplitude amp, option opt)
+    {
+        double mK, m1, m2, m3;
+        switch (opt)
+        {
+            case (option::P_ppm): 
+            {
+                mK = M_KAON_PM; 
+                m1 = M_PION_PM; m2 = M_PION_PM; m3 = M_PION_PM; 
+                break;
+            };
+            case (option::L_zzz):
+            {
+                mK = M_KAON_0; 
+                m1 = M_PION_0;  m2 = M_PION_0;  m3 = M_PION_0; 
+                break;
+            }; 
+            case (option::P_zzp):
+            {
+                mK = M_KAON_PM; 
+                m1 = M_PION_0; m2 = M_PION_0; m3 = M_PION_PM; 
+                break;
+            };
+            case (option::L_pmz):
+            case (option::S_pmz):
+            {
+                mK = M_KAON_0; 
+                m1 = M_PION_PM; m2 = M_PION_PM; m3 = M_PION_0; 
+                break;
+            };
+            default: return NaN<double>();
+        };
+
+        double prefactors = 32*pow(2*PI*mK,3)*amp->combinatorial_factor();
+        complex Gam = integrate_over_physical_phasespace(amp, {opt,opt}, {mK,m1,m2,m3});
+        return real(Gam) / prefactors;
+    };
+
+    inline complex interference_lambda(amplitude amp)
+    {
+        double mK, m1, m2, m3;
+        mK = M_KAON_0; 
+        m1 = M_PION_PM; m2 = M_PION_PM; m3 = M_PION_0; 
+        complex num = integrate_over_physical_phasespace(amp,{option::L_pmz,option::S_pmz}, {mK,m1,m2,m3});
+        complex den = integrate_over_physical_phasespace(amp,{option::L_pmz,option::L_pmz}, {mK,m1,m2,m3});
+        return num/den;
+    };
+
     // Specify the fitter interface
     struct fit
     {
-        // Static identifiers for data_set types
-        // Have two 'types' one which contains only Gamma and h
-        // and another with Gamma, g, h, k
-        static const uint kAll = 0, kHOnly = 1, kLambda = 2;
-        
         // String letting us know what is being fit
         static std::string data_type(int i)
         {
@@ -90,7 +165,7 @@ namespace iterateKT { namespace kaon
         // Compare g, h, k
         static std::array<double,3> chi2_dpars(const data_set & data, amplitude to_fit)
         {
-            auto dpars = to_fit->get_dalitz_parameters(1.E-3, M_PION_PM*M_PION_PM);
+            auto dpars = to_fit->get_dalitz_parameters(1.E-3);
             double g_th = dpars[0], h_th = dpars[1], k_th = dpars[3];
      
             std::array<double,3> chi2;
@@ -111,103 +186,5 @@ namespace iterateKT { namespace kaon
             return chi2;
         };
     };
-
-    inline data_set get_lambda_data()
-    {
-        data_set out;
-        out._id   = "KL - KS interference";
-        out._type = fit::kLambda;
-        out._N    = 2;
-        out._z    = {0.0334, -0.0108};
-        out._dz   = {7E-4, 48E-4};
-        return out;
-    };
-
-    inline data_set get_dalitz_data(option opt)
-    {
-        data_set out;
-        switch (opt)
-        {
-            case option::P_ppm:
-            {
-                out._id = "K+ -> pi+ pi+ pi-";
-                out._z  = {
-                    2.9590,   // Γ
-                    -0.21134, // g
-                    0.0185,   // h
-                    -0.00463  // k
-                };
-                out._dz = {
-                    218E-4,   // δΓ 
-                    17E-5,    // δg
-                    4E-4,     // δh
-                    14E-5     // δk
-                };
-                out._option = option::P_ppm;
-                out._type = fit::kAll;
-                out._N    = 4;
-                break;
-            };
-            case option::P_zzp:
-            {
-                out._id = "K+ -> pi0 pi0 pi+";
-                out._z  = {
-                    0.9438, // Γ
-                    0.626,  // g
-                    0.052,  // h
-                    0.0054  // k
-                };
-                out._dz = {
-                    150E-4, // δΓ 
-                    7E-3,   // δg
-                    8E-3,   // δh
-                    35E-4   // δk
-                };
-                out._option = option::P_zzp;
-                out._type = fit::kAll;
-                out._N    = 4;
-                break;
-            };
-            case option::L_pmz:
-            {
-                out._id = "KL -> pi+ pi- pi0";
-                out._z  = {
-                    1.6200, // Γ
-                    0.678,  // g
-                    0.076,  // h
-                    0.0099  // k
-                };
-                out._dz = {
-                    102E-4, // δΓ 
-                    8E-3,   // δg
-                    6E-3,   // δh
-                    15E-4   // δk
-                };
-                out._option = option::L_pmz;
-                out._type = fit::kAll;
-                out._N    = 4;
-                break;
-            };
-            case option::L_zzz:
-            {
-                out._id = "KL -> pi0 pi0 pi0";
-                out._z = {
-                    2.5417,  // Γ
-                    -0.0061  // h
-                };
-                out._dz = {
-                    352E-4,  // δΓ
-                    10E-4    // δh
-                };
-                out._option = option::L_zzz;
-                out._type = fit::kHOnly;
-                out._N    = 2;
-                break;
-            };
-            default: return out;
-        };
-        return out;
-    };
 }; /* namespace iterateKT */ }; /* namespace kaon_decay */
-
 #endif

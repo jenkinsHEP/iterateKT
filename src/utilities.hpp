@@ -387,7 +387,7 @@ namespace iterateKT
     };
 
     // Another directory that comes up often is the data folder
-    inline std::string data_dir(){ return main_dir() + "/data/"; };
+    inline std::string analysis_dir(){ return main_dir() + "/analysis/"; };
 
     // Same as above but looks for DESKTOP
     inline std::string desktop()

@@ -16,9 +16,8 @@
 #include "colors.hpp"
 #include "constants.hpp"
 #include "plotter.hpp"
-#include "fitter.hpp"
 
-#include "COMPASS/data.hpp"
+#include "COMPASS_pi1/data.hpp"
 
 void plot_data()
 {

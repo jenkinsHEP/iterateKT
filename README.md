@@ -106,4 +106,4 @@ where $\mathcal{N}$ is a numerical factor specificied by `raw_amplitude::combina
 
 ### Plotting and Fitting
 Many utilities are available to effectively fit amplitudes to data and plot the results. 
-See documentation in [`fitter.hpp`](./src/fitter.hpp) and [`plotter.hpp`](./src/plotter.hpp) for details or the example scripts in [`/scripts`](./scripts/).
+See documentation in [`fitter.hpp`](./src/fitter.hpp) and [`plotter.hpp`](./src/plotter.hpp) for details or the example scripts in [`/scripts`](./scripts/) and example fitting interfaces in [`/analysis`](./analysis/).

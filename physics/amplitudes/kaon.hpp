@@ -36,14 +36,6 @@
 
 namespace iterateKT
 {
-    // Different masses for isospin projectionss
-    const double M_KAON_PM  = 0.493677;
-    const double M_KAON_0   = 0.497611;
-    const double M_KAON_AVG = (M_KAON_PM + M_KAON_0)/2;
-    const double M_PION_PM  = 0.13957039;
-    const double M_PION_0   = 0.1349768;
-    const double M_PION_AVG = (M_PION_PM + M_PION_0)/2;
-
     //--------------------------------------------------------------------------
     // K⁺ → π⁺ π⁺ π⁻         
     class Kp_PipPipPim : public raw_amplitude
@@ -354,80 +346,6 @@ namespace iterateKT
         private:
         amplitude current; 
         amplitude p_ppm, p_zzp, L_pmz, S_pmz, L_zzz;
-    };
-
-    // Because the kaon mass is so smal, the mass splittings between isospin projections
-    // make a noticable difference in the phase-space.
-    // So, even though we calculate KT isobars in isospin limit, we can integrate with the realistic 
-    complex integrate_over_physical_phasespace(amplitude amp, std::array<option,2> opts, std::array<double,4> ms)
-    {
-        using namespace boost::math::quadrature;
-        double mK = ms[0], m1 = ms[1], m2 = ms[2], m3 = ms[3];
-        double sth = norm(m2+m3), pth = norm(mK-m1);
-        double sigma = mK*mK + m1*m1 + m2*m2 + m3*m3;
-        auto dGamma = [amp,sigma,mK,m1,m2,m3,opts](double s)
-        {
-            double kappa = sqrt(kallen(s, mK*mK, m1*m1))*sqrt(kallen(s,m2*m2,m3*m3))/s;
-            double tmin  = (sigma - s - kappa)/2, tmax  = (sigma - s + kappa)/2;
-            auto d2Gamma = [amp,s,opts](double t)
-            {
-                complex A, B;
-                amp->set_option(opts[0]); A = amp->evaluate(s,t);
-                if  (opts[0] == opts[1]) return conj(A)*A;
-                amp->set_option(opts[1]); B = amp->evaluate(s,t);  
-                return conj(A)*B;     
-            };
-            return gauss_kronrod<double,15>::integrate(d2Gamma, tmin, tmax, 0, 1.E-9, NULL);
-        };
-        return gauss_kronrod<double,15>::integrate(dGamma, sth, pth, 0, 1.E-9, NULL);
-    };
-
-    double physical_width(amplitude amp, option opt)
-    {
-        double mK, m1, m2, m3;
-        switch (opt)
-        {
-            case (option::P_ppm): 
-            {
-                mK = M_KAON_PM; 
-                m1 = M_PION_PM; m2 = M_PION_PM; m3 = M_PION_PM; 
-                break;
-            };
-            case (option::L_zzz):
-            {
-                mK = M_KAON_AVG; 
-                m1 = M_PION_0;  m2 = M_PION_0;  m3 = M_PION_0; 
-                break;
-            }; 
-            case (option::P_zzp):
-            {
-                mK = M_KAON_PM; 
-                m1 = M_PION_AVG; m2 = M_PION_AVG; m3 = M_PION_AVG; 
-                break;
-            };
-            case (option::L_pmz):
-            case (option::S_pmz):
-            {
-                mK = M_KAON_0; 
-                m1 = M_PION_AVG; m2 = M_PION_AVG; m3 = M_PION_AVG; 
-                break;
-            };
-            default: return NaN<double>();
-        };
-
-        double prefactors = 32*pow(2*PI*mK,3)*amp->combinatorial_factor();
-        complex Gam = integrate_over_physical_phasespace(amp, {opt,opt}, {mK,m1,m2,m3});
-        return real(Gam) / prefactors;
-    };
-
-    inline complex interference_lambda(amplitude amp)
-    {
-        double mK, m1, m2, m3;
-        mK = M_KAON_0; 
-        m1 = M_PION_AVG; m2 = M_PION_AVG; m3 = M_PION_AVG; 
-        complex num = integrate_over_physical_phasespace(amp,{option::L_pmz,option::S_pmz}, {mK,m1,m2,m3});
-        complex den = integrate_over_physical_phasespace(amp,{option::L_pmz,option::L_pmz}, {mK,m1,m2,m3});
-        return num/den;
     };
 };
 

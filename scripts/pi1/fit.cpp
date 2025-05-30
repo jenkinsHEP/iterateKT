@@ -21,7 +21,8 @@
 
 #include "amplitudes/pi1.hpp"
 #include "isobars/pi1.hpp"
-#include "COMPASS/data.hpp"
+#include "COMPASS_pi1/fitter.hpp"
+#include "COMPASS_pi1/data.hpp"
 
 void fit()
 {
@@ -31,7 +32,7 @@ void fit()
     // -----------------------------------------------------------------------
     // Operating options
 
-    int bin_number = 15;  // which m3pi bin to fit
+    int bin_number = 22;  // which m3pi bin to fit
     int Niter      = 5;   // Number of KT iterations
     int Nsub       = 2;   // Number of subtractions
 

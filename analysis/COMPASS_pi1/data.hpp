@@ -25,53 +25,8 @@ using json = nlohmann::json;
 
 namespace iterateKT { namespace COMPASS
 {
-
-    struct fit
-    {
-        // Static identifiers for data_set types
-        static const int kReal = 0, kImag = 1, kAbs = 2;
-        static std::string data_type(int i)
-        {
-            switch (i)
-            {
-                case kReal: return "Re (M)";
-                case kImag: return "Im (M)";
-                case kAbs:  return "Abs (M)";
-                default: return "ERROR!";
-            };
-        };
-
-        // Function to minimize
-        // Filters whether we're looking at the real or imaginary parts 
-        static double fcn(std::vector<data_set> & data_vector, amplitude to_fit)
-        {
-            double chi2 = 0;
-            for (auto data : data_vector)
-            {
-                for (int i = 0; i < data._N; i++)
-                {
-                    double from_data  = data._z[i];
-                    iterateKT::complex from_model = to_fit->evaluate(data._x[i], data._y[i]);  
-
-                    switch (data._type)
-                    {
-                        // These two use difference of squares
-                        case kReal: chi2 += norm(from_data - real(from_model));        break;
-                        case kImag: chi2 += norm(from_data - imag(from_model));        break;
-                        // This is a true chi2
-                        case kAbs:
-                        {
-                            if (is_zero(data._dz[i])) continue;
-                            chi2  += norm((from_data - abs(from_model)) / data._dz[i]); 
-                            break;
-                        };
-                        default: break;
-                    };
-                };
-            };
-            return chi2;
-        };
-    };
+    // Static identifiers for data_set types
+    static const int kReal = 0, kImag = 1, kAbs = 2;
 
     // Parse a JSON file importing everything in a data_set object
     // Columns correspond to: s, t, Abs(M), Err(M)
@@ -83,7 +38,7 @@ namespace iterateKT { namespace COMPASS
         // ---------------------------------------------------------------------------
         // Read in json and organize everything 
 
-        std::string path_to_file = data_dir() + "COMPASS/raw_files/" + input;
+        std::string path_to_file = analysis_dir() + "COMPASS_pi1/raw_files/" + input;
         std::ifstream raw_file(path_to_file);
         if (!raw_file) fatal("Could not open file: " + path_to_file);
         json data = json::parse(raw_file);
@@ -131,7 +86,7 @@ namespace iterateKT { namespace COMPASS
         //  Organize everything
         out._N    = N_actual;         
         out._id   = id;               
-        out._type = fit::kAbs;     
+        out._type = kAbs;     
         out._extras["Nbins"] = N; 
         out._extras["m3pi"] = m3pi; 
         out._extras["t"]    = t;    
@@ -152,7 +107,7 @@ namespace iterateKT { namespace COMPASS
         // ---------------------------------------------------------------------------
         // Read in json and organize everything 
 
-        std::string path_to_file = data_dir() + "COMPASS/raw_files/" + input;
+        std::string path_to_file = analysis_dir() + "COMPASS_pi1/raw_files/" + input;
         std::ifstream raw_file(path_to_file);
         if (!raw_file) fatal("Could not open file: " + path_to_file);
         json data = json::parse(raw_file);
@@ -201,7 +156,7 @@ namespace iterateKT { namespace COMPASS
         // Import everything into the data_sets
         out_real._N  = N_actual;          out_imag._N = N_actual;
         out_real._id = id;                out_imag._id = id; 
-        out_real._type = fit::kReal;      out_imag._type = fit::kImag;
+        out_real._type = kReal;      out_imag._type = kImag;
         out_real._extras["Nbins"] = N;    out_imag._extras["Nbins"] = N; 
         out_real._extras["m3pi"]  = m3pi; out_imag._extras["m3pi"]  = m3pi; 
         out_real._extras["t"]     = t;    out_imag._extras["t"]     = t; 

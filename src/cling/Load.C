@@ -20,7 +20,7 @@ void Load()
     // Headers
     TString core    = main_dir + "/src"; 
     TString physics = main_dir + "/physics";
-    TString data    = main_dir + "/data";
+    TString data    = main_dir + "/analysis";
 
     if (!gSystem->AccessPathName(lib.Data()))
     {
