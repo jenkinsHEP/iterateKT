@@ -50,5 +50,4 @@ kaon/basis_functions
 *.txt
 
 # hide non-public data
-physics/phase_shifts/bern/
 data/COMPASS/raw_files

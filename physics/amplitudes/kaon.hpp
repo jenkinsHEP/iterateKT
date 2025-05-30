@@ -427,7 +427,6 @@ namespace iterateKT
         m1 = M_PION_AVG; m2 = M_PION_AVG; m3 = M_PION_AVG; 
         complex num = integrate_over_physical_phasespace(amp,{option::L_pmz,option::S_pmz}, {mK,m1,m2,m3});
         complex den = integrate_over_physical_phasespace(amp,{option::L_pmz,option::L_pmz}, {mK,m1,m2,m3});
-        print(num, den);
         return num/den;
     };
 };
