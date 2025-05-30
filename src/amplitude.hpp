@@ -66,7 +66,7 @@ namespace iterateKT
         virtual complex prefactor_t(id iso_id, complex s, complex t, complex u){ return 0.; };
         virtual complex prefactor_u(id iso_id, complex s, complex t, complex u){ return 0.; };
 
-        // Calculate widths in the physical decay region
+        // Calculate widths in the physical (symmetric) decay region
         double differential_width(double s, double t);
         double differential_width(double s);
         double width();
@@ -121,11 +121,21 @@ namespace iterateKT
 
         // -----------------------------------------------------------------------
         // Calculate Daltiz plot parameters from amplitude
-        // We use the conventions and notation of the PDG for Kaon decays
+        // By default we use the conventions and notation of the PDG 
         // see ``Dalitz Plot Parameters for K -> 3pi decays" in RPP
-
         // Output in order {g, h, j, k, f}
-        std::array<double,5> get_dalitz_parameters(double eps = 1E-5, double m2 = M_PION*M_PION);
+
+        // The optional arguments are for the center of the dalitz plot and normalization:
+        // X = (t - s )/m[0]
+        // Y = (u - s0)/m[1]
+
+        std::array<double,5> get_dalitz_parameters(double eps, double s0, std::array<double,2> ms);
+
+        // Use the s0 from _kinematics
+        std::array<double,5> get_dalitz_parameters(double eps = 1E-5, std::array<double,2> ms = {M_PION*M_PION, M_PION*M_PION})
+        {
+            return get_dalitz_parameters(eps, _kinematics->s0(), ms);
+        };
 
         // -----------------------------------------------------------------------
         private:

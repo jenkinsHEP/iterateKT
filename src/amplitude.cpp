@@ -201,13 +201,16 @@ namespace iterateKT
 
     // -----------------------------------------------------------------------
     // Calculate Daltiz plot parameters from amplitude
-    // We use the conventions and notation of the PDG 
+    // By default we use the conventions and notation of the PDG 
     // see ``Dalitz Plot Parameters for K -> 3pi decays" in RPP
     // Output in order {g, h, j, k, f}
+
+    // The optional arguments are for the center of the dalitz plot and normalization:
+    // X = (t - s )/m[0]
+    // Y = (u - s0)/m[1]
     
-    std::array<double,5> raw_amplitude::get_dalitz_parameters(double e, double m2)
+    std::array<double,5> raw_amplitude::get_dalitz_parameters(double e, double s0, std::array<double,2> m)
     {
-        double s0 = _kinematics->s0(); 
         double N  = norm(evaluate(s0,s0));
 
         // Rename our function for readibility
@@ -215,7 +218,6 @@ namespace iterateKT
         auto Fs = [this,F,s0](double s){ return F(s,s0); };
         auto Fu = [this,F,s0](double u){ return F(s0,u); };
 
-        
         double dFds, dFdu, d2Fd2s, d2Fd2u, d2Fdsdu;
         
         // We just use a (4-point) central finite difference 
@@ -230,18 +232,17 @@ namespace iterateKT
         d2Fdsdu = mixed_partial_derivatives<double>(F, {s0, s0}, e);
 
         // derivatives of s and u with respect to X and Y
-        // X = (t - s) /m2
-        // Y = (u - x)/m2
-        // dsdX = dsdY = -dudY/2 = c 
-        double c = -m2/2; 
+        // dsdX = cx, dudX = 0
+        // dsdY = -dudY/2 = cy
+        double cx = -m[0]/2, cy = -m[1]/2; 
 
         // derivatives of F in terms of X and Y
         double dFdX, dFdY, d2Fd2X, d2Fd2Y, d2FdXdY;
-        dFdX    = c* dFds;
-        dFdY    = c*(dFds-2*dFdu);
-        d2Fd2X  = c*c* d2Fd2s;
-        d2FdXdY = c*c*(d2Fd2s - 2*d2Fdsdu);
-        d2Fd2Y  = c*c*(d2Fd2s - 4*d2Fdsdu + 4*d2Fd2u); 
+        dFdX    = cx* dFds;
+        dFdY    = cy*(dFds-2*dFdu);
+        d2Fd2X  = cx*cx* d2Fd2s;
+        d2FdXdY = cx*cy*(d2Fd2s - 2*d2Fdsdu);
+        d2Fd2Y  = cy*cy*(d2Fd2s - 4*d2Fdsdu + 4*d2Fd2u); 
         
         // Assmble our outputs
         double g, h, j, f, k;
