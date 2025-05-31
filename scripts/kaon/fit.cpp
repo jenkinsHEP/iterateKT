@@ -29,7 +29,7 @@ void fit()
     // Set up the amplitude from previously calculated isobars
 
     // Amplitude itself is given by the isospin limit
-    kinematics kin = new_kinematics(kaon::M_KAON_AVG, kaon::M_PION_PM);
+    kinematics kin = new_kinematics(M_KAON_AVG, M_PION_PM);
     amplitude  amp = new_amplitude<K_3pi>(kin, "K -> 3π");
 
     // Empty array of subtraction indices for isobars with no polynomial
@@ -60,7 +60,7 @@ void fit()
     fitter<kaon::fit> fitter(amp);
 
     // Fit tends to be slow so its nice to have print level != 0 to see some progress
-    fitter.set_print_level(2);
+    fitter.set_print_level(4);
     fitter.set_tolerance(1);
     
     // Parameter labels and starting guess
@@ -73,7 +73,7 @@ void fit()
     fitter.add_data(kaon::get_dalitz_data(option::P_zzp));
     fitter.add_data(kaon::get_dalitz_data(option::L_pmz));
     fitter.add_data(kaon::get_dalitz_data(option::L_zzz));
-    fitter.add_data(kaon::get_lambda_data());
+    // fitter.add_data(kaon::get_lambda_data());
 
     // We only fit real parts so force only fitting real parts
     for (auto par : labels) fitter.make_real(par);

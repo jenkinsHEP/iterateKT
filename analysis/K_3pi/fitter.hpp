@@ -14,41 +14,7 @@
 
 namespace iterateKT { namespace kaon
 {
-    // Different masses for isospin projectionss
-    const double M_KAON_PM  = 0.493677;
-    const double M_KAON_0   = 0.497611;
-    const double M_KAON_AVG = (M_KAON_PM + M_KAON_0)/2;
-    const double M_PION_PM  = 0.13957039;
-    const double M_PION_0   = 0.1349768;
-    const double M_PION_AVG = (M_PION_PM + M_PION_0)/2;
-
-    // Because the kaon mass is so smal, the mass splittings between isospin projections
-    // make a noticable difference in the phase-space.
-    // So, even though we calculate KT isobars in isospin limit, we can integrate with the realistic 
-    complex integrate_over_physical_phasespace(amplitude amp, std::array<option,2> opts, std::array<double,4> ms)
-    {
-        using namespace boost::math::quadrature;
-        double mK = ms[0], m1 = ms[1], m2 = ms[2], m3 = ms[3];
-        double sth = norm(m2+m3), pth = norm(mK-m1);
-        double sigma = mK*mK + m1*m1 + m2*m2 + m3*m3;
-        auto dGamma = [amp,sigma,mK,m1,m2,m3,opts](double s)
-        {
-            double kappa = sqrt(kallen(s, mK*mK, m1*m1))*sqrt(kallen(s,m2*m2,m3*m3))/s;
-            double tmin  = (sigma - s - kappa)/2, tmax  = (sigma - s + kappa)/2;
-            auto d2Gamma = [amp,s,opts](double t)
-            {
-                complex A, B;
-                amp->set_option(opts[0]); A = amp->evaluate(s,t);
-                if  (opts[0] == opts[1]) return conj(A)*A;
-                amp->set_option(opts[1]); B = amp->evaluate(s,t);  
-                return conj(A)*B;     
-            };
-            return gauss_kronrod<double,15>::integrate(d2Gamma, tmin, tmax, 0, 1.E-9, NULL);
-        };
-        return gauss_kronrod<double,15>::integrate(dGamma, sth, pth, 0, 1.E-9, NULL);
-    };
-
-    double physical_width(amplitude amp, option opt)
+    std::array<double,4> get_masses(option opt)
     {
         double mK, m1, m2, m3;
         switch (opt)
@@ -78,22 +44,59 @@ namespace iterateKT { namespace kaon
                 m1 = M_PION_PM; m2 = M_PION_PM; m3 = M_PION_0; 
                 break;
             };
-            default: return NaN<double>();
+            default: fatal("kaon::get_masses", "Unknown option!");
         };
+        return {mK, m1, m2, m3};
+    };
 
-        double prefactors = 32*pow(2*PI*mK,3)*amp->combinatorial_factor();
-        complex Gam = integrate_over_physical_phasespace(amp, {opt,opt}, {mK,m1,m2,m3});
+    // Because the kaon mass is so smal, the mass splittings between isospin projections
+    // make a noticable difference in the phase-space.
+    // So, even though we calculate KT isobars in isospin limit, we can integrate with the realistic 
+    complex integrate_over_physical_phasespace(amplitude amp, std::array<option,2> opts)
+    {
+        using namespace boost::math::quadrature;
+        auto ms = get_masses(opts[0]);
+        double mK = ms[0], m1 = ms[1], m2 = ms[2], m3 = ms[3];
+        double sth = norm(m2+m3), pth = norm(mK-m1);
+        double sigma = mK*mK + m1*m1 + m2*m2 + m3*m3;
+        auto dGamma = [amp,sigma,mK,m1,m2,m3,opts](double s)
+        {
+            double kappa = sqrt(kallen(s, mK*mK, m1*m1))*sqrt(kallen(s,m2*m2,m3*m3))/s;
+            double tmin  = (sigma - s - kappa)/2, tmax  = (sigma - s + kappa)/2;
+            auto d2Gamma = [amp,s,opts](double t)
+            {
+                complex A, B;
+                amp->set_option(opts[0]); A = amp->evaluate(s,t);
+                if  (opts[0] == opts[1]) return conj(A)*A;
+                amp->set_option(opts[1]); B = amp->evaluate(s,t);  
+                return conj(A)*B;     
+            };
+            return gauss_kronrod<double,15>::integrate(d2Gamma, tmin, tmax, 0, 1.E-9, NULL);
+        };
+        return gauss_kronrod<double,15>::integrate(dGamma, sth, pth, 0, 1.E-9, NULL);
+    };
+
+    inline double physical_width(amplitude amp, option opt)
+    {
+        auto ms = get_masses(opt);
+        double prefactors = 32*pow(2*PI*ms[0],3)*amp->combinatorial_factor();
+        complex Gam = integrate_over_physical_phasespace(amp, {opt,opt});
         return real(Gam) / prefactors;
     };
 
     inline complex interference_lambda(amplitude amp)
     {
-        double mK, m1, m2, m3;
-        mK = M_KAON_0; 
-        m1 = M_PION_PM; m2 = M_PION_PM; m3 = M_PION_0; 
-        complex num = integrate_over_physical_phasespace(amp,{option::L_pmz,option::S_pmz}, {mK,m1,m2,m3});
-        complex den = integrate_over_physical_phasespace(amp,{option::L_pmz,option::L_pmz}, {mK,m1,m2,m3});
+        complex num = integrate_over_physical_phasespace(amp,{option::L_pmz,option::S_pmz});
+        complex den = integrate_over_physical_phasespace(amp,{option::L_pmz,option::L_pmz});
         return num/den;
+    };
+
+    inline std::array<double,5> physical_dalitz_parameters(amplitude amp, option opt)
+    {
+        amp->set_option(opt);
+        auto   ms = get_masses(opt);
+        double s0 = (ms[0]*ms[0] + ms[1]*ms[1] + ms[2]*ms[2] + ms[3]*ms[3])/3.;
+        return amp->get_dalitz_parameters(1E-5, s0, {M_PION_PM*M_PION_PM, M_PION_PM*M_PION_PM});
     };
 
     // Specify the fitter interface
@@ -165,7 +168,9 @@ namespace iterateKT { namespace kaon
         // Compare g, h, k
         static std::array<double,3> chi2_dpars(const data_set & data, amplitude to_fit)
         {
-            auto dpars = to_fit->get_dalitz_parameters(1.E-3);
+            auto dpars = physical_dalitz_parameters(to_fit, data._option);
+            // auto dpars = to_fit->get_dalitz_parameters(1.E-3);
+
             double g_th = dpars[0], h_th = dpars[1], k_th = dpars[3];
      
             std::array<double,3> chi2;

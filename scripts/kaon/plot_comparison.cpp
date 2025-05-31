@@ -50,13 +50,13 @@ void plot_comparison()
     // -----------------------------------------------------------------------
     // Also grab the isobars from [1]
 
-    auto S0  = import_data<7>("data/K_3pi/orsay_isobars/S_0.dat");
-    auto S1  = import_data<7>("data/K_3pi/orsay_isobars/S_1.dat");
-    auto S2  = import_data<7>("data/K_3pi/orsay_isobars/S_2.dat");
-    auto S3  = import_data<7>("data/K_3pi/orsay_isobars/S_3.dat");
-    auto Sp  = import_data<3>("data/K_3pi/orsay_isobars/St1.dat");
-    auto St1 = import_data<5>("data/K_3pi/orsay_isobars/StI_0.dat");
-    auto St2 = import_data<5>("data/K_3pi/orsay_isobars/StI_1.dat");
+    auto S0  = import_data<7>("analysis/K_3pi/orsay_isobars/S_0.dat");
+    auto S1  = import_data<7>("analysis/K_3pi/orsay_isobars/S_1.dat");
+    auto S2  = import_data<7>("analysis/K_3pi/orsay_isobars/S_2.dat");
+    auto S3  = import_data<7>("analysis/K_3pi/orsay_isobars/S_3.dat");
+    auto Sp  = import_data<3>("analysis/K_3pi/orsay_isobars/St1.dat");
+    auto St1 = import_data<5>("analysis/K_3pi/orsay_isobars/StI_0.dat");
+    auto St2 = import_data<5>("analysis/K_3pi/orsay_isobars/StI_1.dat");
 
     // -----------------------------------------------------------------------
     // Plot Results

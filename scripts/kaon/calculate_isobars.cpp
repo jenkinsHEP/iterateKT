@@ -39,7 +39,8 @@ void calculate_isobars()
 
     // Adjust expansion near pth
     settings sets = default_settings();
-    sets._expansion_offsets   = {1E-3, 1E-2, 1E-2};
+    sets._matching_intervals = {1E-4, 1E-4, 5E-2};
+    sets._expansion_offsets  = {1E-3, 1E-2, 5E-2};
 
     // Add all the isobars, note the order they are added will be the order
     // the basis functions are generated

@@ -51,9 +51,9 @@ namespace iterateKT
         sets._exclusion_offsets       = {2.E-2, 2E-2};
         sets._infinitesimal           = 1E-8;
         sets._intermediate_energy     = 1.0;
-        sets._cutoff                  = 40.0;
+        sets._cutoff                  = 20.0;
         sets._interpolation_offset    = 1E-4;
-        sets._interpolation_points    = {600, 10, 150};
+        sets._interpolation_points    = {300, 10, 100};
 
         double xi_sth = 1E-4,   eps_sth = 1E-3;
         double xi_pth = 1E-4,   eps_pth = 1E-3;
