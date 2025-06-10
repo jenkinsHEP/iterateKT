@@ -23,6 +23,7 @@ void fit()
 {
     using namespace iterateKT;
     using iterateKT::complex;
+    using iterateKT::option;
     
     // --------------------------------------------------------------------------
     // Set up the amplitude from previously calculated isobars
