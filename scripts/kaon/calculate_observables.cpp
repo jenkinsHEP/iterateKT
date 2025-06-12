@@ -79,8 +79,7 @@ void calculate_observables()
     auto P_zzp  = kaon::get_dalitz_data(option::P_zzp);
     auto L_pmz  = kaon::get_dalitz_data(option::L_pmz);
     auto L_zzz  = kaon::get_dalitz_data(option::L_zzz);
-    auto lambda = kaon::get_lambda_data();
-    std::vector<data_set> all_data = {P_ppm, P_zzp, L_pmz, L_zzz, lambda};
+    std::vector<data_set> all_data = {P_ppm, P_zzp, L_pmz, L_zzz};
     
     double eps = 1E-3;
     std::array<double,5> dpars; // Dalitz plot parameters
@@ -125,15 +124,6 @@ void calculate_observables()
     print<10,17>("g", "0.678(8)",    dpars[0], chi2_dpar[0]);
     print<10,17>("h", "0.076(6)",    dpars[1], chi2_dpar[1]);
     print<10,17>("k", "0.0099(15)",  dpars[3], chi2_dpar[2]);
-    line();
-
-    print<25>("","KS → π⁺π⁻π⁰"); divider(4);
-    complex   lam = interference_lambda(amp);
-    auto chi2_lam = kaon::fit::chi2_lambda(lambda, amp);
-    amp->set_option(option::S_pmz);
-    print<11,17>("Γ",    "0.0026(7)",   physical_width(amp, option::S_pmz), "    -");
-    print<11,17>("Re λ", "0.0334(52)",  real(lam), chi2_lam[0]);
-    print<11,17>("Im λ", "-0.0108(48)", imag(lam), chi2_lam[1]);
     line();
 
     print<8,19>("", "", "Total χ²:", kaon::fit::fcn(all_data, amp));
