@@ -60,7 +60,7 @@ void fit()
     fitter<kaon::fit> fitter(amp);
 
     // Fit tends to be slow so its nice to have print level != 0 to see some progress
-    fitter.set_print_level(4);
+    fitter.set_print_level(0);
     fitter.set_tolerance(1);
     
     // Parameter labels and starting guess
