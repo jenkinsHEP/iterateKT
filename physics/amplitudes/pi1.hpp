@@ -35,21 +35,72 @@ namespace iterateKT
         // Spin 1 decay so (2j+1) = 3
         inline double combinatorial_factor(){ return 3; };
 
-        // Loop integral
-        static inline complex projected_deck(double t, double m3pi2, complex sig)
+        static constexpr double _mu2 = 0.13957000*0.13957000;
+        static constexpr double _eps = 1E-5;
+
+        static inline complex deck(double t, double M2, complex s)
         {
-            using namespace boost::math::quadrature;
-            auto f = [&](double x, double y)
+            bool no_problem = (!is_zero(imag(s), _eps) || real(s) <= 4*_mu2);
+            if  (no_problem) return deck_complex_plane(t, M2, s);
+            else             return deck_on_real_axis (t, M2, real(s));
+        };
+
+        // If sig is complex, just evaluate all the square roots naively
+        static inline complex deck_complex_plane(double t, double M2, complex s)
+        {
+            // Masses and momenta
+            complex p2 = kallen(M2, t, _mu2)/4/M2;
+            complex kappa  = csqrt(kallen(M2, t, _mu2)*kallen(M2, s, _mu2))/M2;
+            complex rho    = csqrt(kallen(M2, s, _mu2))/M2;
+            // Momentum transfer tau
+            complex tauz = 2*_mu2-(M2+_mu2-t)*(M2-s+_mu2)/2/M2;
+            complex taup = tauz+kappa/2;
+            complex taum = tauz-kappa/2;
+            // Assemble the final discontinuity
+            complex  eta = M2-t-s+(_mu2-s)*(_mu2-t)/M2;
+            complex zeta = eta-_mu2+tauz;
+            complex   Q0 = log(_mu2-taum) - log(_mu2-taup)/kappa;
+            
+            return PI*rho/16/p2*((kappa*kappa-eta*eta)*Q0+4*zeta);
+        };
+
+        // Else we want to carefully handle the analytic continuation 
+        static inline complex deck_on_real_axis(double t, double M2, double s)
+        {
+            // Masses and momenta
+            double p = sqrt(kallen(M2, t, _mu2))/2/sqrt(M2);
+            
+            // Take the abs value and handle phase manually
+            double aq = abs(csqrt(kallen(M2, s, _mu2))/2/sqrt(M2));
+            double ak = 4*p*aq;
+
+            int region = (s >= norm(sqrt(M2)-sqrt(_mu2)))
+                       + (s >= M2 - _mu2)
+                       + (s >= norm(sqrt(M2)+sqrt(_mu2)));
+
+            complex kappa, rho;
+            switch (region)
             {
-                complex a, b, c, d, mu = M_PION;
-                a = t;
-                b = x*(mu*mu + t - m3pi2) - t;
-                c = (1-x)*(1-x)*mu*mu + x*sig;
-                d = csqrt(b*b - 4*a*c);
-                return (4*a*y - (b+2*a*y)*log(a*y*y+b*y+c) - 2*d*atanh((b+2*a*y)/d))/a;
+                case 0: kappa = +  ak; rho = +2*  aq/sqrt(M2); break;
+                case 1: kappa = +I*ak; rho = +2*I*aq/sqrt(M2); break;
+                case 2: kappa = +I*ak; rho = -2*I*aq/sqrt(M2); break;
+                case 3: kappa = -  ak; rho = -2*  aq/sqrt(M2); break;
+                default: return NaN<complex>();
             };
-            auto integrand = [&](double x){ return f(x, 1-x) - f(x, 0); };
-            return gauss_kronrod<double,61>::integrate(integrand, 0, 1, 0, 1.E-9, NULL);
+            
+            // Momentum transfer tau
+            complex tauz = 2*_mu2-(M2+_mu2-t)*(M2-s+_mu2)/2/M2;
+            complex taup = tauz+kappa/2, taum = tauz-kappa/2;
+
+            // Assemble the final discontinuity
+            complex  eta = M2-t-s+(_mu2-s)*(_mu2-t)/M2;
+            complex zeta = eta-_mu2+tauz;
+
+            bool log_problem = (region==2 && are_equal(s, M2-_mu2, 1E-2));
+            complex Q0 = log_problem ? -I*PI/kappa 
+                                     : log((_mu2-taum)/(_mu2-taup))/kappa;       
+
+            return PI*rho/16/norm(p)*((norm(kappa)-eta*eta)*Q0 + 4*zeta);
         };
         
         // Assuming a pi- pi- pi+ decay and only P-waves
