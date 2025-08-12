@@ -88,7 +88,7 @@ namespace iterateKT
 
         mg->GetXaxis()->CenterTitle(true);
         mg->GetYaxis()->CenterTitle(true);
-        mg->GetYaxis()->SetMaxDigits(2);
+        mg->GetYaxis()->SetMaxDigits(3);
         _canvas->Modified();
 
         double ylow, yhigh, xlow, xhigh;
