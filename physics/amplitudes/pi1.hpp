@@ -38,71 +38,28 @@ namespace iterateKT
         static constexpr double _mu2 = 0.13957000*0.13957000;
         static constexpr double _eps = 1E-5;
 
-        static inline complex deck(double t, double M2, complex s)
-        {
-            bool no_problem = (!is_zero(imag(s), _eps) || real(s) <= 4*_mu2);
-            if  (no_problem) return deck_complex_plane(t, M2, s);
-            else             return deck_on_real_axis (t, M2, real(s));
-        };
-
         // If sig is complex, just evaluate all the square roots naively
-        static inline complex deck_complex_plane(double t, double M2, complex s)
+        static inline complex deck(complex t, complex M2, complex s)
         {
             // Masses and momenta
-            complex p2 = kallen(M2, t, _mu2)/4/M2;
-            complex kappa  = csqrt(kallen(M2, t, _mu2)*kallen(M2, s, _mu2))/M2;
-            complex rho    = csqrt(kallen(M2, s, _mu2))/M2;
+            complex p   = csqrt(kallen(M2, t, complex(_mu2)))/2/csqrt(M2);
+            complex q   = csqrt(kallen(M2, s, complex(_mu2)))/2/csqrt(M2);
+            // Theres vertical cuts here, flip sign if we cross
+            if (real(s-M2)>=_mu2) q *= -1;
+            // phasespace
+            complex rho = 2*q/csqrt(M2);
+            // Kacser function
+            complex k   = 4*p*q; 
             // Momentum transfer tau
-            complex tauz = 2*_mu2-(M2+_mu2-t)*(M2-s+_mu2)/2/M2;
-            complex taup = tauz+kappa/2;
-            complex taum = tauz-kappa/2;
+            auto    tau = [&](double z){ return 2*_mu2-(M2+_mu2-t)*(M2-s+_mu2)/2/M2+z*k/2; };
+            // Projection of OPE
+            complex Q0  = (log(_mu2-tau(-1))-log(_mu2-tau(+1)))/k;
             // Assemble the final discontinuity
-            complex  eta = M2-t-s+(_mu2-s)*(_mu2-t)/M2;
-            complex zeta = eta-_mu2+tauz;
-            complex   Q0 = log(_mu2-taum) - log(_mu2-taup)/kappa;
-            
-            return PI*rho/16/p2*((kappa*kappa-eta*eta)*Q0+4*zeta);
+            complex a   = M2-t-s+(_mu2-s)*(_mu2-t)/M2;
+            complex b   = a-_mu2+tau(0);
+            return PI*rho/p/p/16*((k*k-a*a)*Q0+4*b);
         };
 
-        // Else we want to carefully handle the analytic continuation 
-        static inline complex deck_on_real_axis(double t, double M2, double s)
-        {
-            // Masses and momenta
-            double p = sqrt(kallen(M2, t, _mu2))/2/sqrt(M2);
-            
-            // Take the abs value and handle phase manually
-            double aq = abs(csqrt(kallen(M2, s, _mu2))/2/sqrt(M2));
-            double ak = 4*p*aq;
-
-            int region = (s >= norm(sqrt(M2)-sqrt(_mu2)))
-                       + (s >= M2 - _mu2)
-                       + (s >= norm(sqrt(M2)+sqrt(_mu2)));
-
-            complex kappa, rho;
-            switch (region)
-            {
-                case 0: kappa = +  ak; rho = +2*  aq/sqrt(M2); break;
-                case 1: kappa = +I*ak; rho = +2*I*aq/sqrt(M2); break;
-                case 2: kappa = +I*ak; rho = -2*I*aq/sqrt(M2); break;
-                case 3: kappa = -  ak; rho = -2*  aq/sqrt(M2); break;
-                default: return NaN<complex>();
-            };
-            
-            // Momentum transfer tau
-            complex tauz = 2*_mu2-(M2+_mu2-t)*(M2-s+_mu2)/2/M2;
-            complex taup = tauz+kappa/2, taum = tauz-kappa/2;
-
-            // Assemble the final discontinuity
-            complex  eta = M2-t-s+(_mu2-s)*(_mu2-t)/M2;
-            complex zeta = eta-_mu2+tauz;
-
-            bool log_problem = (region==2 && are_equal(s, M2-_mu2, 1E-2));
-            complex Q0 = log_problem ? -I*PI/kappa 
-                                     : log((_mu2-taum)/(_mu2-taup))/kappa;       
-
-            return PI*rho/16/norm(p)*((norm(kappa)-eta*eta)*Q0 + 4*zeta);
-        };
-        
         // Assuming a pi- pi- pi+ decay and only P-waves
         // s = (pi- + pi+)^2 
         // t = (pi- + pi+)^2
