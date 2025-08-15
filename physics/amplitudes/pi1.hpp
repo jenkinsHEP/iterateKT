@@ -35,7 +35,8 @@ namespace iterateKT
         // Spin 1 decay so (2j+1) = 3
         inline double combinatorial_factor(){ return 3; };
 
-        static constexpr double _mu2 = 0.13957000*0.13957000;
+        static constexpr double _mu  = 0.13957000;
+        static constexpr double _mu2 = _mu*_mu;
         static constexpr double _eps = 1E-5;
 
         // If sig is complex, just evaluate all the square roots naively
@@ -51,7 +52,12 @@ namespace iterateKT
             // Kacser function
             complex k   = 4*p*q; 
             // Momentum transfer tau
-            auto    tau = [&](double z){ return 2*_mu2-(M2+_mu2-t)*(M2-s+_mu2)/2/M2+z*k/2; };
+            auto    tau = [&](double z)
+            {
+                bool above_rth = real(s) >= norm(csqrt(M2)+_mu);
+                complex x = (above_rth) ? real(s) : s;
+                return 2*_mu2-(M2+_mu2-t)*(M2-x+_mu2)/2/M2+z*k/2; 
+            };
             // Projection of OPE
             complex Q0  = (log(_mu2-tau(-1))-log(_mu2-tau(+1)))/k;
             // Assemble the final discontinuity

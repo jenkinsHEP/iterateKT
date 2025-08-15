@@ -175,6 +175,16 @@ namespace iterateKT
         return (a%2 == 1);
     };
 
+    inline bool is_real(complex a, double tol = EPS)
+    {
+        return is_zero(imag(a), tol);
+    };
+
+    inline bool is_imaginary(complex a, double tol = EPS)
+    {
+        return is_zero(real(a), tol);
+    };
+
     // ---------------------------------------------------------------------------
     // ERROR Messages
     
