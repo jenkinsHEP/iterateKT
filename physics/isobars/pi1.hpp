@@ -37,7 +37,7 @@ namespace iterateKT
         sets._interpolation_points    = {200, 10, 100};
         double xi_sth = 1E-3,  eps_sth = 1E-3;
         double xi_pth = 1E-3,  eps_pth = 1E-2;
-        double xi_rth = 1E-2,  eps_rth = 1E-1;
+        double xi_rth = 3E-1,  eps_rth = 3E-1;
 
         sets._exclusion_offsets   = {2E-1, 2E-1};
         sets._matching_intervals  = {xi_sth,  xi_pth,  xi_rth };
@@ -59,7 +59,6 @@ namespace iterateKT
         inline double  phase_shift(double s){ return GKPY::phase_shift(1,1, s); };
         inline complex ksf_kernel(id iso_id, complex s, complex t)
         { 
-            if (iso_id == id::Deck && real(s) >= _kinematics->pth()) return 0.;
             complex  k  = _kinematics->kacser(s), kz = _kinematics->kz(s,t);
             return -3/2*(k*k - kz*kz); // We've multiplied by k^2 which is why singularity_power() = 2
         };

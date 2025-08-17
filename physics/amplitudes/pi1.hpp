@@ -59,7 +59,7 @@ namespace iterateKT
                 return 2*_mu2-(M2+_mu2-t)*(M2-x+_mu2)/2/M2+z*k/2; 
             };
             // Projection of OPE
-            complex Q0  = (log(_mu2-tau(-1))-log(_mu2-tau(+1)))/k;
+            complex Q0  = (log(_mu2-tau(-1))-log(_mu2-tau(+1)+IEPS))/k;
             // Assemble the final discontinuity
             complex a   = M2-t-s+(_mu2-s)*(_mu2-t)/M2;
             complex b   = a-_mu2+tau(0);

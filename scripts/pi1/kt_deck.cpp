@@ -34,13 +34,9 @@ void kt_deck()
     solver solver(kinematics);
 
     // The projection function is given by our Deck loop 
-    double Delta0 = imag(pi1::projected_deck(t, m3pi*m3pi, 0)); // normalize to sigma = 0
-    auto   Delta  = [&](complex sigma){return imag(pi1::projected_deck(t, m3pi*m3pi, sigma))/Delta0;};
+    auto   Delta  = [&](complex sigma){return pi1::deck(t, m3pi*m3pi, sigma);};
 
-    settings sets = default_settings();
-    sets._exclusion_offsets = {0.5, 0.5};
-
-    isobar pwave = solver.add_isobar<P_wave>(Delta, 1, id::Deck, "Deck", sets);
+    isobar pwave = solver.add_isobar<P_wave>(Delta, 1, id::Deck, "Deck");
     
     // -----------------------------------------------------------------------
     timer timer;
@@ -48,21 +44,22 @@ void kt_deck()
 
     timer.start();
 
-    double smin = 0, smax = 2.0;
+    double smin = 0, smax = 2.6;
     double A = kinematics->A();
     double B = kinematics->B();
     double C = kinematics->C();
     double D = kinematics->D();
 
     plot p1 = plotter.new_plot();
-    p1.set_legend(0.55, 0.6);
+    p1.set_legend(0.675, 0.6);
     p1.set_curve_points(1000);
     p1.set_xrange({smin, smax});
     p1.set_labels("#sigma   [GeV^{2}]", "#it{F}_{#Delta} (t, #it{m}_{3#pi}^{2} #; #sigma + #it{i}#epsilon)");
     p1.add_horizontal(0);
+    p1.add_vertical(D);
     p1.shade_region({A,C});
     p1.add_header("#minus #it{t}  = 0.1 GeV^{2}");
-    p1.add_curve( {smin, smax}, [&](double s) { return std::real(pwave->basis_function(0, s+IEPS)); }, "#Delta #times #Omega");
+    p1.add_curve( {smin, smax}, [&](double s) { return std::real(pwave->basis_function(0, s+IEPS)); }, "#Delta #Omega");
     p1.add_dashed({smin, smax}, [&](double s) { return std::imag(pwave->basis_function(0, s+IEPS)); });
    
     std::array<std::string,4> labels = {"1st", "2nd", "3rd", "4th"};
