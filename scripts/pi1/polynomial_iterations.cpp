@@ -21,7 +21,7 @@
 #include "isobars/pi1.hpp"
 
 
-void iterations()
+void polynomial_iterations()
 {
     using namespace iterateKT;
 
@@ -52,6 +52,7 @@ void iterations()
     uint N = 4;
 
     plot p1 = plotter.new_plot();
+    p1.add_header("#it{m}_{3#pi}^{2} = (1.4)^{2}");
     p1.set_legend(0.7, 0.65);
     p1.set_curve_points(1000);
     p1.set_ranges({smin, smax}, {-4, 7.5});
@@ -59,10 +60,11 @@ void iterations()
     p1.add_horizontal(0);
     p1.shade_region({A,C});
     p1.add_vertical(D);
-    p1.add_curve( {smin, smax}, [&](double s) { return std::real(pwave->basis_function(0, s+IEPS)); }, "#Omega_{1}");
+    p1.add_curve( {smin, smax}, [&](double s) { return std::real(pwave->basis_function(0, s+IEPS)); }, "#Omega(#sigma)");
     p1.add_dashed({smin, smax}, [&](double s) { return std::imag(pwave->basis_function(0, s+IEPS)); });
     
     plot p2 = plotter.new_plot();
+    p2.add_header("#it{m}_{3#pi}^{2} = (1.4)^{2}");
     p2.set_legend(0.7, 0.65);
     p2.set_curve_points(1000);
     p2.set_ranges({smin, smax}, {-3, 4.5});
@@ -70,7 +72,7 @@ void iterations()
     p2.add_horizontal(0);
     p2.shade_region({A,C});
     p2.add_vertical(D);
-    p2.add_curve( {smin, smax}, [&](double s) { return std::real(pwave->basis_function(1, s+IEPS)); }, "#it{s} #Omega_{1}");
+    p2.add_curve( {smin, smax}, [&](double s) { return std::real(pwave->basis_function(1, s+IEPS)); }, "#sigma #Omega(#sigma)");
     p2.add_dashed({smin, smax}, [&](double s) { return std::imag(pwave->basis_function(1, s+IEPS)); });
     
     std::array<std::string,4> labels = {"1st", "2nd", "3rd", "4th"};

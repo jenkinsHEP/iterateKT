@@ -59,6 +59,7 @@ namespace iterateKT
         inline double  phase_shift(double s){ return GKPY::phase_shift(1,1, s); };
         inline complex ksf_kernel(id iso_id, complex s, complex t)
         { 
+            if (iso_id != get_id()) return 0.; // Only interact with self
             complex  k  = _kinematics->kacser(s), kz = _kinematics->kz(s,t);
             return -3/2*(k*k - kz*kz); // We've multiplied by k^2 which is why singularity_power() = 2
         };

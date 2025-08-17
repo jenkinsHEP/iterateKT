@@ -24,7 +24,7 @@
 #include "COMPASS_pi1/fitter.hpp"
 #include "COMPASS_pi1/data.hpp"
 
-void fit()
+void polynomial_fit()
 {
     using namespace iterateKT;
     using iterateKT::complex;

@@ -21,7 +21,7 @@
 #include "amplitudes/pi1.hpp"
 #include "isobars/pi1.hpp"
 
-void kt_deck()
+void deck_iterations()
 {
     using namespace iterateKT;
     using iterateKT::complex;
@@ -51,15 +51,15 @@ void kt_deck()
     double D = kinematics->D();
 
     plot p1 = plotter.new_plot();
-    p1.set_legend(0.675, 0.6);
     p1.set_curve_points(1000);
     p1.set_xrange({smin, smax});
-    p1.set_labels("#sigma   [GeV^{2}]", "#it{F}_{#Delta} (t, #it{m}_{3#pi}^{2} #; #sigma + #it{i}#epsilon)");
+    p1.set_labels("#sigma   [GeV^{2}]", "#it{F}_{#Delta} (#it{t}, #it{m}_{3#pi}^{2} #; #sigma + #it{i}#epsilon)");
     p1.add_horizontal(0);
     p1.add_vertical(D);
     p1.shade_region({A,C});
-    p1.add_header("#minus #it{t}  = 0.1 GeV^{2}");
-    p1.add_curve( {smin, smax}, [&](double s) { return std::real(pwave->basis_function(0, s+IEPS)); }, "#Delta #Omega");
+    p1.add_header("#minus#it{t}  = 0.1, #it{m}_{3#pi}^{2} = (1.4)^{2}");
+    p1.set_legend(0.6, 0.6);
+    p1.add_curve( {smin, smax}, [&](double s) { return std::real(pwave->basis_function(0, s+IEPS)); }, "#Delta(#it{t}, #it{m}_{3#pi}^{2}; #sigma) #Omega(#sigma)");
     p1.add_dashed({smin, smax}, [&](double s) { return std::imag(pwave->basis_function(0, s+IEPS)); });
    
     std::array<std::string,4> labels = {"1st", "2nd", "3rd", "4th"};
@@ -69,7 +69,7 @@ void kt_deck()
         p1.add_curve( {smin, smax}, [&](double s) { return std::real(pwave->basis_function(0, s+IEPS)); }, labels[i-1]);
         p1.add_dashed({smin, smax}, [&](double s) { return std::imag(pwave->basis_function(0, s+IEPS)); });
     };
-    p1.save("deck_iterations.pdf");
+    p1.save("iterations.pdf");
 
     timer.stop();
     timer.print_elapsed();

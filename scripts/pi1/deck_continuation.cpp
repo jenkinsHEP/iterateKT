@@ -20,7 +20,7 @@
 
 #include "amplitudes/pi1.hpp"
 
-void plot_deck()
+void deck_continuation()
 {
     using namespace iterateKT;
     using iterateKT::complex;
