@@ -34,7 +34,7 @@ namespace iterateKT
         double s3  = _settings._intermediate_energy;
         double s4  = _settings._cutoff;
 
-        if (s3 <= s2 || s2 <= s1) warning("Intermediate energy chosen below pseudo-threshold! May cause interpolation troubles...");
+        if (s3 <= s2 || s2 <= s1) fatal("Intermediate energy chosen below or too close to pseudo-threshold! This will cause interpolation troubles...");
         
         std::array<int,3> Ns = _settings._interpolation_points;
         int N_0  = Ns[0];
