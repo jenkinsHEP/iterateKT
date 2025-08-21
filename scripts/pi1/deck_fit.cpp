@@ -24,7 +24,7 @@
 #include "COMPASS_pi1/fitter.hpp"
 #include "COMPASS_pi1/data.hpp"
 
-void polynomial_fit()
+void deck_fit()
 {
     using namespace iterateKT;
     using iterateKT::complex;
@@ -34,23 +34,27 @@ void polynomial_fit()
 
     int bin_number = 22;  // which m3pi bin to fit
     int Niter      = 5;   // Number of KT iterations
-    int Nsub       = 2;   // Number of subtractions
 
     // -----------------------------------------------------------------------
     // Set up amplitude and iterative solution
 
     // Import our data set first so we can know the m3pi bin
-    data_set data   = COMPASS::parse_JSON("dalitz_m3pi_bin_number_"+to_string(bin_number)+"_tBin_3.json");
-    double m3pi     = data._extras["m3pi"];
+    data_set data  = COMPASS::parse_JSON("dalitz_m3pi_bin_number_"+to_string(bin_number)+"_tBin_3.json");
+    double m3pi    = data._extras["m3pi"];
+    double t       = data._extras["t"];
 
     // Set up general kinematics so everything knows masses
     kinematics kin = new_kinematics(m3pi, M_PION);
     
     // Set up our amplitude 
-    amplitude amp = new_amplitude<pi1>(kin, "π₁ → 3π");
+    amplitude amp  = new_amplitude<pi1>(kin, "π₁ → 3π");
 
-    // We only have one isobar, which we import here
-    amp->add_isobar<P_wave>(Nsub, id::P_wave);
+    // Contact piece gets just constant as driving term
+    auto   contact = [&](complex sigma){return 1.;};
+    // The projection function is given by our Deck loop 
+    auto   Delta   = [&](complex sigma){return pi1::deck(t, m3pi*m3pi, sigma);};
+    // Add isobar using the above function as our driving term
+    isobar pwave   = amp->add_isobar<P_wave>({contact, Delta}, 1, id::P_wave, "Deck");
 
     // Iterate Niter times
     amp->timed_iterate(Niter);
@@ -59,17 +63,15 @@ void polynomial_fit()
     // Set up fitter
 
     // These vectors should be same size as Nsub above
-    std::vector<std::string> all_labels = {"alpha", "beta", "gamma"};
-    std::vector<std::string> par_labels(all_labels.begin(), all_labels.begin() + Nsub);
-    std::vector<complex> initial_guess(Nsub, 1.0);
+    std::vector<std::string> par_labels = {"alpha", "gamma"};
+    std::vector<complex> initial_guess  = {519.96412 , complex(-849.19216,154.51591)};
 
     // Add data
     fitter<COMPASS::fit> fitter(amp);
     fitter.add_data(data);
     
     fitter.set_parameter_labels(par_labels);
-    fitter.make_real("alpha"); // Fix overall phase 
-
+    fitter.make_real("alpha"); 
     fitter.do_fit(initial_guess);
 
     // -----------------------------------------------------------------------
@@ -99,8 +101,8 @@ void polynomial_fit()
     double max_pull = *std::max_element(pull.begin(), pull.end());
 
     plot2D p2 = kin->new_dalitz_plot(plotter);
-    p2.set_palette(kTemperatureMap);
     p2.set_Nbins(data._extras["Nbins"]);
+    p2.set_palette(kTemperatureMap);
     p2.set_data({data._x, data._y, pull});
     p2.set_labels(xlabel, ylabel);
     p2.set_ranges(bounds, bounds, {-max_pull, max_pull});

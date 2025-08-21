@@ -31,7 +31,7 @@ namespace iterateKT
         settings sets;
         sets._exclusion_points        = 6;
         sets._infinitesimal           = 1E-7;
-        sets._intermediate_energy     = 2;
+        sets._intermediate_energy     = 4;
         sets._cutoff                  = 20;
         sets._interpolation_offset    = 0.1;
         sets._interpolation_points    = {200, 10, 100};

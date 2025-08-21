@@ -34,64 +34,40 @@ void deck_pinocchio()
     kinematics kinematics = new_kinematics(m3pi, M_PION);
     solver solver(kinematics);
 
-    // Contat piece gets just constant as driving term
-    isobar contact = solver.add_isobar<P_wave>(1, id::Contact, "Contact");
-
+    // Contact piece gets just constant as driving term
+    auto   contact = [&](complex sigma){return 1.;};
     // The projection function is given by our Deck loop 
     auto   Delta   = [&](complex sigma){return pi1::deck(t, m3pi*m3pi, sigma);};
     // Add isobar using the above function as our driving term
-    isobar deck    = solver.add_isobar<P_wave>(Delta, 1, id::Deck, "Deck");
+    isobar pwave   = solver.add_isobar<P_wave>({contact, Delta}, 1, id::Deck, "Deck");
 
-    
     std::vector<isobar> isos = solver.get_isobars();
 
     // -----------------------------------------------------------------------
-    timer timer;
     plotter plotter;
-
-    timer.start();
 
     double A = kinematics->A();
     double B = kinematics->B();
     double C = kinematics->C();
     double D = kinematics->D();
-    double smin = A, smax = 3.;
+    double smin = A, smax = 3.5;
 
     plot p1 = plotter.new_plot();
     p1.set_curve_points(1000);
     p1.set_xrange({smin, smax});
-    p1.set_labels("#sigma   [GeV^{2}]", "#tilde{#it{F}}_{#alpha} (#sigma)");
+    p1.add_header("#minus#it{t}  = 0.1, #it{m}_{3#pi}^{2} = (1.4)^{2}");
+    p1.set_labels("#sigma   [GeV^{2}]", "#kappa^{3} #tilde{#it{F}} (#it{t}, #it{m}^{2}_{3#pi} #; #sigma)");
     p1.add_horizontal(0);
-    p1.set_legend(0.6, 0.4);
-    p1.add_header("#minus #it{t}  = 0.1, #it{m}_{3#pi}^{2} = (1.4)^{2}");
-    
-    plot p2 = plotter.new_plot();
-    p2.set_curve_points(1000);
-    p2.set_xrange({smin, smax});
-    p2.set_labels("#sigma   [GeV^{2}]", "#tilde{#it{F}}_{#Delta} (#it{t}, #it{m}_{3#pi}^{2} #; #sigma)");
-    p2.add_horizontal(0);
-    p2.set_legend(0.6, 0.4);
-    p2.add_header("#minus #it{t}  = 0.1, #it{m}_{3#pi}^{2} = (1.4)^{2}");
+    p1.add_vertical(D);
+    p1.shade_region({A,C});
+    p1.set_legend(0.225, 0.75);
 
-    p1.add_curve({smin, smax}, [&](double s) { return std::real(contact->pinocchio_integral(0, s, isos)); }, solid(jpacColor::Blue,   "Real"));
-    p1.add_curve({smin, smax}, [&](double s) { return std::imag(contact->pinocchio_integral(0, s, isos)); }, solid(jpacColor::Red,    "Imaginary"));
-    p2.add_curve({smin, smax}, [&](double s) { return std::real(deck   ->pinocchio_integral(1, s, isos)); }, solid(jpacColor::Green,  "Real"));
-    p2.add_curve({smin, smax}, [&](double s) { return std::imag(deck   ->pinocchio_integral(1, s, isos)); }, solid(jpacColor::Orange, "Imaginary"));
+    solver.timed_iterate(4);
+    p1.add_curve({smin, smax}, [&](double s) { return std::real(deck->pinocchio_integral(0, s, isos)); }, solid(jpacColor::Blue,   "#alpha"));
+    p1.add_curve({smin, smax}, [&](double s) { return std::imag(deck->pinocchio_integral(0, s, isos)); }, dashed(jpacColor::Blue));
+    p1.add_curve({smin, smax}, [&](double s) { return std::real(deck->pinocchio_integral(1, s, isos)); }, solid(jpacColor::Red,  "#Delta"));
+    p1.add_curve({smin, smax}, [&](double s) { return std::imag(deck->pinocchio_integral(1, s, isos)); }, dashed(jpacColor::Red));
    
-    solver.iterate(); timer.lap();
-    p1.add_curve({smin, smax}, [&](double s) { return std::real(contact->pinocchio_integral(0, s, isos)); }, dashed(jpacColor::Blue));
-    p1.add_curve({smin, smax}, [&](double s) { return std::imag(contact->pinocchio_integral(0, s, isos)); }, dashed(jpacColor::Red));
-    p2.add_curve({smin, smax}, [&](double s) { return std::real(deck   ->pinocchio_integral(1, s, isos)); }, dashed(jpacColor::Green));
-    p2.add_curve({smin, smax}, [&](double s) { return std::imag(deck   ->pinocchio_integral(1, s, isos)); }, dashed(jpacColor::Orange));
-    solver.iterate(); timer.lap();
-    p1.add_curve({smin, smax}, [&](double s) { return std::real(contact->pinocchio_integral(0, s, isos)); }, dotted(jpacColor::Blue));
-    p1.add_curve({smin, smax}, [&](double s) { return std::imag(contact->pinocchio_integral(0, s, isos)); }, dotted(jpacColor::Red));
-    p2.add_curve({smin, smax}, [&](double s) { return std::real(deck   ->pinocchio_integral(1, s, isos)); }, dotted(jpacColor::Green));
-    p2.add_curve({smin, smax}, [&](double s) { return std::imag(deck   ->pinocchio_integral(1, s, isos)); }, dotted(jpacColor::Orange));
-
     // Save to file
-    plotter.combine({2,1}, {p1,p2}, "angular_integrals.pdf");
-
-    timer.stop();
-    timer.print_elapsed();
+    p1.save("angular_integrals.pdf");
 };
