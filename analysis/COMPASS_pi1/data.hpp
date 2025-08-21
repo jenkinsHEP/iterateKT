@@ -51,9 +51,9 @@ namespace iterateKT { namespace COMPASS
         // Calculate central t in bin
         auto t_upper = data["bin_ranges"]["t_upper_limit"].template get<double>();
         auto t_lower = data["bin_ranges"]["t_lower_limit"].template get<double>();
-        double t = (t_upper + t_lower)/2;
+        double t = -(t_upper + t_lower)/2;
     
-        std::string id = "m3π = " + to_string(m3pi,2) + ", t' = " + to_string(t,2);
+        std::string id = "m3π = " + to_string(m3pi,2) + ", t' = " + to_string(-t,2);
 
         auto bins      = data["bin_centers"];
         auto abs_M     = data["abs_M"];
@@ -120,9 +120,9 @@ namespace iterateKT { namespace COMPASS
         // Calculate central t in bin
         auto t_upper = data["bin_ranges"]["t_upper_limit"].template get<double>();
         auto t_lower = data["bin_ranges"]["t_lower_limit"].template get<double>();
-        double t = (t_upper + t_lower)/2;
+        double t = -(t_upper + t_lower)/2;
     
-        std::string id = "m3π = " + to_string(m3pi,2) + ", -t = " + to_string(t,2);
+        std::string id = "m3π = " + to_string(m3pi,2) + ", -t = " + to_string(-t,2);
 
         auto bin_centers = data["bin_centers"];
         auto real_parts  = data["real(M)"];
