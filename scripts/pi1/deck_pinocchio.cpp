@@ -39,7 +39,7 @@ void deck_pinocchio()
     // The projection function is given by our Deck loop 
     auto   Delta   = [&](complex sigma){return pi1::deck(t, m3pi*m3pi, sigma);};
     // Add isobar using the above function as our driving term
-    isobar pwave   = solver.add_isobar<P_wave>({contact, Delta}, 1, id::Deck, "Deck");
+    isobar pwave   = solver.add_isobar<P_wave>({contact, Delta}, 2, id::Deck, "Deck");
 
     std::vector<isobar> isos = solver.get_isobars();
 
@@ -60,13 +60,13 @@ void deck_pinocchio()
     p1.add_horizontal(0);
     p1.add_vertical(D);
     p1.shade_region({A,C});
-    p1.set_legend(0.225, 0.75);
+    p1.set_legend(0.25, 0.75);
 
     solver.timed_iterate(4);
-    p1.add_curve({smin, smax}, [&](double s) { return std::real(deck->pinocchio_integral(0, s, isos)); }, solid(jpacColor::Blue,   "#alpha"));
-    p1.add_curve({smin, smax}, [&](double s) { return std::imag(deck->pinocchio_integral(0, s, isos)); }, dashed(jpacColor::Blue));
-    p1.add_curve({smin, smax}, [&](double s) { return std::real(deck->pinocchio_integral(1, s, isos)); }, solid(jpacColor::Red,  "#Delta"));
-    p1.add_curve({smin, smax}, [&](double s) { return std::imag(deck->pinocchio_integral(1, s, isos)); }, dashed(jpacColor::Red));
+    p1.add_curve({smin, smax}, [&](double s) { return std::real(pwave->pinocchio_integral(0, s, isos)); }, solid(jpacColor::Blue,   "#alpha"));
+    p1.add_curve({smin, smax}, [&](double s) { return std::imag(pwave->pinocchio_integral(0, s, isos)); }, dashed(jpacColor::Blue));
+    p1.add_curve({smin, smax}, [&](double s) { return std::real(pwave->pinocchio_integral(1, s, isos)); }, solid(jpacColor::Red,  "#Delta"));
+    p1.add_curve({smin, smax}, [&](double s) { return std::imag(pwave->pinocchio_integral(1, s, isos)); }, dashed(jpacColor::Red));
    
     // Save to file
     p1.save("angular_integrals.pdf");

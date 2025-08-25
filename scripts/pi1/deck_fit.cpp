@@ -50,11 +50,13 @@ void deck_fit()
     amplitude amp  = new_amplitude<pi1>(kin, "π₁ → 3π");
 
     // Contact piece gets just constant as driving term
-    auto   contact = [&](complex sigma){return 1.;};
+    auto   constant = [&](complex sigma){return 1.;};
+    auto   linear   = [&](complex sigma){return sigma;};
+
     // The projection function is given by our Deck loop 
     auto   Delta   = [&](complex sigma){return pi1::deck(t, m3pi*m3pi, sigma);};
     // Add isobar using the above function as our driving term
-    isobar pwave   = amp->add_isobar<P_wave>({contact, Delta}, 1, id::P_wave, "Deck");
+    isobar pwave   = amp->add_isobar<P_wave>({constant, Delta}, 2, id::P_wave, "Deck");
 
     // Iterate Niter times
     amp->timed_iterate(Niter);
@@ -64,7 +66,7 @@ void deck_fit()
 
     // These vectors should be same size as Nsub above
     std::vector<std::string> par_labels = {"alpha", "gamma"};
-    std::vector<complex> initial_guess  = {519.96412 , complex(-849.19216,154.51591)};
+    std::vector<complex> initial_guess  = {562.53688, complex(-839.26775,102.64043)};
 
     // Add data
     fitter<COMPASS::fit> fitter(amp);

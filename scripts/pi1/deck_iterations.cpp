@@ -34,9 +34,9 @@ void deck_iterations()
     solver solver(kinematics);
 
     // The projection function is given by our Deck loop 
-    auto   Delta  = [&](complex sigma){return pi1::deck(t, m3pi*m3pi, sigma);};
-
-    isobar pwave = solver.add_isobar<P_wave>(Delta, 1, id::Deck, "Deck");
+    auto   constant = [&](complex sigma){return 1.;};
+    auto   deck     = [&](complex sigma){return pi1::deck(t, m3pi*m3pi, sigma);};
+    isobar pwave = solver.add_isobar<P_wave>({constant, deck}, 2, id::Deck, "Deck");
     
     // -----------------------------------------------------------------------
     timer timer;
@@ -44,7 +44,7 @@ void deck_iterations()
 
     timer.start();
 
-    double smin = 0, smax = 2.6;
+    double smin = -0., smax = 2.6;
     double A = kinematics->A();
     double B = kinematics->B();
     double C = kinematics->C();
@@ -59,17 +59,32 @@ void deck_iterations()
     p1.shade_region({A,C});
     p1.add_header("#minus#it{t}  = 0.1, #it{m}_{3#pi}^{2} = (1.4)^{2}");
     p1.set_legend(0.6, 0.6);
-    p1.add_curve( {smin, smax}, [&](double s) { return std::real(pwave->basis_function(0, s+IEPS)); }, "#Delta(#it{t}, #it{m}_{3#pi}^{2}; #sigma) #Omega(#sigma)");
-    p1.add_dashed({smin, smax}, [&](double s) { return std::imag(pwave->basis_function(0, s+IEPS)); });
+    p1.add_curve( {smin, smax}, [&](double s) { return std::real(pwave->basis_function(1, s+IEPS)); }, "#Delta(#it{t}, #it{m}_{3#pi}^{2}; #sigma) #Omega(#sigma)");
+    p1.add_dashed({smin, smax}, [&](double s) { return std::imag(pwave->basis_function(1, s+IEPS)); });
    
     std::array<std::string,4> labels = {"1st", "2nd", "3rd", "4th"};
     for (int i = 1; i <= N; i++)
     {
         solver.iterate();
-        p1.add_curve( {smin, smax}, [&](double s) { return std::real(pwave->basis_function(0, s+IEPS)); }, labels[i-1]);
-        p1.add_dashed({smin, smax}, [&](double s) { return std::imag(pwave->basis_function(0, s+IEPS)); });
+        p1.add_curve( {smin, smax}, [&](double s) { return std::real(pwave->basis_function(1, s+IEPS)); }, labels[i-1]);
+        p1.add_dashed({smin, smax}, [&](double s) { return std::imag(pwave->basis_function(1, s+IEPS)); });
     };
-    p1.save("iterations.pdf");
+    p1.save("deck_isobar.pdf");
+
+    plot p2 = plotter.new_plot();
+    p2.set_curve_points(1000);
+    p2.set_xrange({smin, smax});
+    p2.set_labels("#sigma   [GeV^{2}]", "#it{F}(#it{t}, #it{m}_{3#pi}^{2} #; #sigma + #it{i}#epsilon)");
+    p2.add_horizontal(0);
+    p2.add_vertical(D);
+    p2.shade_region({A,C});
+    p2.add_header("#minus#it{t}  = 0.1, #it{m}_{3#pi}^{2} = (1.4)^{2}");
+    p2.set_legend(0.6, 0.6);
+    p2.add_curve( {smin, smax}, [&](double s) { return std::real(pwave->basis_function(0, s+IEPS)); }, solid(jpacColor::Blue, "#alpha"));
+    p2.add_curve( {smin, smax}, [&](double s) { return std::imag(pwave->basis_function(0, s+IEPS)); }, dashed(jpacColor::Blue));
+    p2.add_curve( {smin, smax}, [&](double s) { return std::real(pwave->basis_function(1, s+IEPS)); }, solid(jpacColor::Red, "#Delta"));
+    p2.add_curve( {smin, smax}, [&](double s) { return std::imag(pwave->basis_function(1, s+IEPS)); }, dashed(jpacColor::Red));
+    p2.save("deck_comparison.pdf");
 
     timer.stop();
     timer.print_elapsed();
