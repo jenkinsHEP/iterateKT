@@ -27,7 +27,7 @@ void deck_pinocchio()
     using namespace iterateKT;
     using iterateKT::complex;
 
-    uint   N    = 4;    // Number of iterations
+    uint   N    = 6;    // Number of iterations
     double t    = -0.1; // Production t
     double m3pi = 1.40; // 3pi invariant mass
 
@@ -39,7 +39,7 @@ void deck_pinocchio()
     // The projection function is given by our Deck loop 
     auto   Delta   = [&](complex sigma){return pi1::deck(t, m3pi*m3pi, sigma);};
     // Add isobar using the above function as our driving term
-    isobar pwave   = solver.add_isobar<P_wave>({contact, Delta}, 2, id::Deck, "Deck");
+    isobar pwave   = solver.add_isobar<P_wave>({contact, Delta}, 3, id::Deck, "Deck");
 
     std::vector<isobar> isos = solver.get_isobars();
 
@@ -62,7 +62,7 @@ void deck_pinocchio()
     p1.shade_region({A,C});
     p1.set_legend(0.25, 0.75);
 
-    solver.timed_iterate(4);
+    solver.timed_iterate(N);
     p1.add_curve({smin, smax}, [&](double s) { return std::real(pwave->pinocchio_integral(0, s, isos)); }, solid(jpacColor::Blue,   "#alpha"));
     p1.add_curve({smin, smax}, [&](double s) { return std::imag(pwave->pinocchio_integral(0, s, isos)); }, dashed(jpacColor::Blue));
     p1.add_curve({smin, smax}, [&](double s) { return std::real(pwave->pinocchio_integral(1, s, isos)); }, solid(jpacColor::Red,  "#Delta"));

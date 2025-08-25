@@ -33,7 +33,7 @@ void deck_fit()
     // Operating options
 
     int bin_number = 22;  // which m3pi bin to fit
-    int Niter      = 5;   // Number of KT iterations
+    int Niter      = 6;   // Number of KT iterations
 
     // -----------------------------------------------------------------------
     // Set up amplitude and iterative solution
@@ -56,7 +56,7 @@ void deck_fit()
     // The projection function is given by our Deck loop 
     auto   Delta   = [&](complex sigma){return pi1::deck(t, m3pi*m3pi, sigma);};
     // Add isobar using the above function as our driving term
-    isobar pwave   = amp->add_isobar<P_wave>({constant, Delta}, 2, id::P_wave, "Deck");
+    isobar pwave   = amp->add_isobar<P_wave>({constant, linear, Delta}, 3, id::P_wave, "Deck");
 
     // Iterate Niter times
     amp->timed_iterate(Niter);
@@ -65,8 +65,8 @@ void deck_fit()
     // Set up fitter
 
     // These vectors should be same size as Nsub above
-    std::vector<std::string> par_labels = {"alpha", "gamma"};
-    std::vector<complex> initial_guess  = {562.53688, complex(-839.26775,102.64043)};
+    std::vector<std::string> par_labels = {"alpha", "beta", "gamma"};
+    std::vector<complex> initial_guess  = {390.55564, 0.0, complex(-437.95092,8.1154294)};
 
     // Add data
     fitter<COMPASS::fit> fitter(amp);
