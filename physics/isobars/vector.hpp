@@ -26,25 +26,6 @@ namespace iterateKT
     // If we ignore rho-omega mixing, we have only one, else we have two
     enum class id : unsigned int { P_wave, charged, neutral, F_wave };
 
-    // Choose default parameters for isobars
-    inline settings default_settings()
-    {
-        settings sets;
-        sets._infinitesimal           = 1E-8;
-        sets._intermediate_energy     = 1.5;
-        sets._cutoff                  = 20;
-        sets._interpolation_offset    = 0.1;
-        sets._interpolation_points    = {400, 10, 200};
-        double xi_sth = 1E-3,  eps_sth = 1E-3;
-        double xi_pth = 1E-3,  eps_pth = 1E-3;
-        double xi_rth = 1E-2,  eps_rth = 1E-2;
-
-        sets._exclusion_offsets   = {1E-1, 1E-1};
-        sets._matching_intervals  = {xi_sth,  xi_pth,  xi_rth };
-        sets._expansion_offsets   = {eps_sth, eps_pth, eps_rth};
-        return sets;
-    };
-
     // The P-wave is the dominant isobar
     // In terms of individual isobars this is the only one we need
     class P_wave : public raw_isobar

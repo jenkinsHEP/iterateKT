@@ -11,6 +11,9 @@
 #define SETTINGS_HPP
 
 #include "utilities.hpp"
+#include "phase_shift.hpp"
+#include "basis.hpp"
+#include <tuple>
 #include <Math/Interpolator.h>
 
 namespace iterateKT
@@ -18,6 +21,18 @@ namespace iterateKT
     struct settings
     {
         settings(){};
+
+        // Save a factor of (id, phaseshift) pairs
+        // This will tell the isobar class how to initialize 
+        std::vector<std::tuple<id,phase_args>> _phase_shifts;
+
+        // Look through the saved vector above and find the relevant one
+        inline phase_args get_phase(id x)
+        {
+            for (auto y : _phase_shifts) if (x == std::get<0>(y)) return std::get<1>(y);
+            // fatal("settings::get_phase", "Cannot find phase!");
+            return phase_args();
+        };
 
         // We use variable iterations to improve convergence by articially surpressing KT effects
         // At each next iteration we decrease the surpression linearly until we arrive back 

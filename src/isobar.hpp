@@ -60,6 +60,9 @@ namespace iterateKT
         : _kinematics(args._kin), _settings(args._sets), _subtractions(args._subs), 
                                   _id(args._id), _name(args._name)
         { 
+            auto phase_args = args._sets.get_phase(args._id);
+            if (std::get<0>(phase_args) != "") _delta.set_info(phase_args);
+
             // When we have "unsubtracted" we assume we do have one but no polynomial
             _max_sub = (args._maxsub == 0) ? 1 : args._maxsub;
             initialize();

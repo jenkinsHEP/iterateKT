@@ -46,6 +46,13 @@ namespace iterateKT
             return asymptotic(s);
         };
 
+        inline void set_info(phase_args info)
+        {
+            _error = false; 
+            _match = std::get<1>(info); _k = std::get<2>(info);
+            interpolate(std::get<0>(info));
+        };
+
         private:
 
         bool    _error = true;
