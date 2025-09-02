@@ -1,17 +1,14 @@
-// Isobars relevant for the decay of isospin-1/2 decay to 3pi in [1]
-//
-// One may notice that these isobars follow the same structure as those of 
-// the eta -> 3pi (e.g. in "eta.hpp")
-// but these are redefined here anyway to avoid confusion
+// Isobars relevant for the decay of isospin-1/2 pseudoscalar decay to 3π
 // 
 // ------------------------------------------------------------------------------
-// Author:       Daniel Winney (2024)
+// Author:       Daniel Winney (2025)
 // Affiliation:  Universitat Bonn
 //               Helmholtz Institute (HISKP)
 // Email:        daniel.winney@gmail.com
 // ------------------------------------------------------------------------------
 // REFERENCES: 
 // [1] - https://arxiv.org/abs/2403.17570
+// [2] - https://arxiv.org/abs/2111.02417
 // ------------------------------------------------------------------------------
 
 #ifndef KAON_AMPLITUDES_HPP
@@ -22,330 +19,142 @@
 #include "kinematics.hpp"
 #include "settings.hpp"
 #include "phase_shift.hpp"
-#include "isobars/kaon.hpp"
-#include <boost/math/quadrature/gauss_kronrod.hpp>
-#include "TMatrixD.h"
-
-// The amplitudes are named with respect to isospin projections of the decay particle
-// into three pions. The order matters in that the definitions of s, t, and u.
+#include "isobars/pseudoscalar.hpp"
 
 // For a general K_Pi1Pi2Pi3, we have:
-// s = (K - Pi1)^2 = (Pi2 + Pi3)^2 = s1
-// t = (K - Pi2)^2 = (Pi1 + Pi3)^2 = s2
-// u = (K - Pi3)^2 = (Pi1 + Pi2)^2 = s3
+// s = (K - π1)^2 = (π2 + π3)^2 = s1
+// t = (K - π2)^2 = (π1 + π3)^2 = s2
+// u = (K - π3)^2 = (π1 + π2)^2 = s3
+
+// We assume the symmetric channels are t <-> u
 
 namespace iterateKT
 {
-    //--------------------------------------------------------------------------
-    // K⁺ → π⁺ π⁺ π⁻         
-    class Kp_PipPipPim : public raw_amplitude
+    inline settings default_settings()
     {
-        public: 
-        Kp_PipPipPim(kinematics xkin, std::string id) : raw_amplitude(xkin, id){};
-        inline double combinatorial_factor(){ return 2.; }; // 2 identical particles 
-        inline complex prefactor_s(id iso_id, complex s1, complex s2, complex s3)
-        {
-            switch (iso_id)
-            {
-                case (id::dI1_I1_S0): return -1;
-                case (id::dI1_I1_P1): return +(s3-s2);
-                case (id::dI1_I1_S2): return -1./3;
-                case (id::dI3_I1_S0): return -1;
-                case (id::dI3_I1_P1): return +(s3-s2);
-                case (id::dI3_I1_S2): return -1./3;
-                case (id::dI3_I2_P1): return +3*(s3-s2)/2;
-                case (id::dI3_I2_S2): return +1./2;
-                default: return 0;
-            };
-        };
-        // factors with s2 (same as s1 factors with s1 <-> s2)
-        inline complex prefactor_t(id iso_id, complex s1, complex s2, complex s3)
-        { return prefactor_s(iso_id, s2, s1, s3); };
-        // factors with s3
-        inline complex prefactor_u(id iso_id, complex s1, complex s2, complex s3)
-        {
-            switch (iso_id)
-            {
-                case (id::dI1_I1_S2): return -2;
-                case (id::dI3_I1_S2): return -2;
-                case (id::dI3_I2_S2): return -1;
-                default: return 0;
-            };
-        };
+        settings sets;
+        sets._exclusion_points        = 30;
+        sets._exclusion_offsets       = {3.E-2, 5E-2};
+        sets._infinitesimal           = 1E-8;
+        sets._intermediate_energy     = 1.0;
+        sets._cutoff                  = 20.0;
+        sets._interpolation_offset    = 1E-4;
+        sets._interpolation_points    = {400, 10, 100};
+
+        double xi_sth = 1E-4,   eps_sth = 1E-4;
+        double xi_pth = 1E-4,   eps_pth = 1E-3;
+        double xi_rth = 2E-2,   eps_rth = 2E-2;
+        sets._matching_intervals  = {xi_sth,  xi_pth,  xi_rth };
+        sets._expansion_offsets   = {eps_sth, eps_pth, eps_rth};
+
+        phase_args iso_0 = {"madrid/delta_00.dat", 1.69,  1};
+        phase_args iso_1 = {"madrid/delta_11.dat", 1.69,  1};
+        phase_args iso_2 = {"madrid/delta_02.dat", 9.99,  0};
+        sets._phase_shifts = { {id::I0_P1, iso_1}, 
+                               {id::I1_S0, iso_0}, {id::I1_P1, iso_1}, {id::I1_S2, iso_2},
+                               {id::I2_P1, iso_1}, {id::I2_S2, iso_2}};
+        return sets;
     };
-
-    //--------------------------------------------------------------------------
-    // K+ -> pi0 pi0 pi+         
-    class Kp_PizPizPip : public raw_amplitude
-    {
-        public: 
-        Kp_PizPizPip(kinematics xkin, std::string id) : raw_amplitude(xkin, id){};
-        inline double combinatorial_factor(){ return 2.; }; // 2 identical particles
-        inline complex prefactor_s(id iso_id, complex s1, complex s2, complex s3)
-        {
-            switch (iso_id)
-            {
-                case (id::dI1_I1_P1): return +(s3-s2);
-                case (id::dI1_I1_S2): return +1;
-                case (id::dI3_I1_P1): return +(s3-s2);
-                case (id::dI3_I1_S2): return +1;
-                case (id::dI3_I2_P1): return -3*(s3-s2)/2;
-                case (id::dI3_I2_S2): return -1./2;
-                default: return 0;
-            };
-        };
-        inline complex prefactor_t(id iso_id, complex s1, complex s2, complex s3)
-        { return prefactor_s(iso_id, s2, s1, s3); };
-
-        inline complex prefactor_u(id iso_id, complex s1, complex s2, complex s3)
-        {
-            switch (iso_id)
-            {
-                case (id::dI1_I1_S0): return +1;
-                case (id::dI1_I1_S2): return -2./3;
-                case (id::dI3_I1_S0): return +1;
-                case (id::dI3_I1_S2): return -2./3;
-                case (id::dI3_I2_S2): return +1;
-                default: return 0;
-            };
-        };
-    };
-
     
-    //--------------------------------------------------------------------------
-    // KL -> pi+ pi- pi0         
-    class KL_PipPimPiz : public raw_amplitude
-    {
-        public: 
-        KL_PipPimPiz(kinematics xkin, std::string id) : raw_amplitude(xkin, id){};
-        inline complex prefactor_s(id iso_id, complex s1, complex s2, complex s3)
-        {
-            switch (iso_id)
-            {
-                case (id::dI1_I1_P1): return -(s3-s2);
-                case (id::dI1_I1_S2): return -1;
-                case (id::dI3_I1_P1): return +2*(s3-s2);
-                case (id::dI3_I1_S2): return +2;
+    // ------------------------------------------------------------------------------
+    // These are the invariant amplitudes from a 3π state of total isospin
 
-                default: return 0;
-            };
-        };
-        inline complex prefactor_t(id iso_id, complex s1, complex s2, complex s3)
-        { return prefactor_s(iso_id, s2, s1, s3); };
-        inline complex prefactor_u(id iso_id, complex s1, complex s2, complex s3)
-        {
-            switch (iso_id)
-            {
-                case (id::dI1_I1_S0): return -1;
-                case (id::dI1_I1_S2): return +2./3;
-                case (id::dI3_I1_S0): return +2;
-                case (id::dI3_I1_S2): return -4./3;
-                default: return 0;
-            };
-        };
-    };
-
-    //--------------------------------------------------------------------------
-    // KS -> pi+ pi- pi0         
-    class KS_PipPimPiz : public raw_amplitude
-    {
-        public: 
-        KS_PipPimPiz(kinematics xkin, std::string id) : raw_amplitude(xkin, id){};
-        inline complex prefactor_s(id iso_id, complex s1, complex s2, complex s3)
-        {
-            switch (iso_id)
-            {
-                case (id::dI1_I0_P1): return (s2-s3);
-                case (id::dI3_I2_P1): return (s2-s3);
-                case (id::dI3_I2_S2): return +1;
-                default: return 0;
-            };
-        };
-        inline complex prefactor_t(id iso_id, complex s1, complex s2, complex s3)
-        { return - prefactor_s(iso_id, s2, s1, s3); }; // Get a minus sign
-        inline complex prefactor_u(id iso_id, complex s1, complex s2, complex s3)
-        {
-            switch (iso_id)
-            {
-                case (id::dI1_I0_P1): return +(s1-s2);
-                case (id::dI3_I2_P1): return -2*(s1-s2);
-                default: return 0;
-            };
-        };
-    };
-
-    
-    //--------------------------------------------------------------------------
-    // KL -> pi0 pi0 pi0         
-    class KL_PizPizPiz : public raw_amplitude
-    {
-        public: 
-        KL_PizPizPiz(kinematics xkin, std::string id) : raw_amplitude(xkin, id){};     
-        inline double combinatorial_factor(){ return 6.; }; // 3 identical particles
-        inline complex prefactor_s(id iso_id, complex s1, complex s2, complex s3)
-        {
-            switch (iso_id)
-            {
-                case (id::dI1_I1_S0): return +1;
-                case (id::dI1_I1_S2): return +4./3;
-                case (id::dI3_I1_S0): return -2;
-                case (id::dI3_I1_S2): return -8./3;
-                default: return 0;
-            };
-        };
-        inline complex prefactor_t(id iso_id, complex s1, complex s2, complex s3)
-        { return prefactor_s(iso_id, s2, s1, s3); };
-        inline complex prefactor_u(id iso_id, complex s1, complex s2, complex s3)
-        { return prefactor_s(iso_id, s3, s2, s1); };
-    };
-
-    //--------------------------------------------------------------------------
-    // Generic K -> 3 pi this will contain all the above which can be accessed via the set_option() function
-    
-    enum class option : unsigned int { P_ppm, P_zzp, L_pmz, S_pmz, L_zzz };
-
-    class K_3pi : public raw_amplitude
+    // I_3π = 1 amplitude
+    class I1 : public raw_amplitude
     {
         public:
-        K_3pi(kinematics xkin, std::string id) : raw_amplitude(xkin, id)
-        {
-            p_ppm = new_amplitude<Kp_PipPipPim>(xkin);
-            p_zzp = new_amplitude<Kp_PizPizPip>(xkin);
-            L_pmz = new_amplitude<KL_PipPimPiz>(xkin);
-            S_pmz = new_amplitude<KS_PipPimPiz>(xkin);
-            L_zzz = new_amplitude<KL_PizPizPiz>(xkin);
-            current = p_ppm;
-        };
 
-        // We only fit the real parts of the parameters while the imaginary parts are
-        // given by requiring Taylor invariants have vanishing imaginary parts
-        inline std::vector<complex> process_fitter_parameters(std::vector<complex> in_pars)
-        {
-            double eps = 1E-5, s0 = _kinematics->s0();
+        I1(kinematics kin, std::string id) : raw_amplitude(kin,id){};
 
-            //------------------------------------------------------------------------
-            // First we fix the imaginary parts of the M's and N's (total 3π I=1)
-            isobar F0 = get_isobar(id::dI1_I1_S0);
-            isobar F1 = get_isobar(id::dI1_I1_P1);
-            isobar F2 = get_isobar(id::dI1_I1_S2);
-            std::array<isobar,3> F = {F0, F1, F2};
-
-            // Grab all the Taylor coefficients
-            // First index is isospin, second is basis function ID
-            std::array<std::array<complex,4>,3> A, B, C;
-            for (uint i = 0; i <= 2; i++)
-            {
-                for (uint n = 0; n <= 3; n++)
-                {
-                    A[i][n] = F[i]->basis_function(n, 0);
-                    B[i][n] = F[i]->basis_derivative<1>(n, 0, eps);
-                    C[i][n] = F[i]->basis_derivative<2>(n, 0, eps)/2.;
-                };
-            };
-
-            // Construct the 4x4 matrix of Taylor invariants
-            // First index is which invariant, and second is basis_id
-            TArrayD reT_data(16), imT_data(16);
-            for (uint n = 0; n <= 3; n++)
-            {
-                // See first rows of Eq. 6.5 in [1]
-                std::array<complex,4> T;
-                T[0] = A[0][n] + s0*B[0][n] + 4*(A[2][n]+s0*B[2][n])/3;
-                T[1] = 3*A[1][n] + B[0][n] - 5*B[2][n]/3 + 9*s0*(B[1][n] + 2*s0*C[1][n]);
-                T[2] = 3*C[0][n] + 4*C[2][n];
-                T[3] = C[2][n] + B[1][n] + 3*s0*C[1][n];
-               
-                for (int j = 0; j <= 3; j++)
-                {
-                    reT_data[4*j+n] = real(T[j]);  imT_data[4*j+n] = imag(T[j]);
-                };
-            };
-            TMatrixD reT(4,4, reT_data.GetArray()), imT(4,4, imT_data.GetArray());
-
-            // Now we actually solve the matrix equation relating reMu and imMu
-            TMatrixD M = reT.Invert()*imT; M *= -1;
-
-            Double_t reMu_data[4], reNu_data[4];
-            for (int i = 0; i <= 3; i++)
-            { 
-                reMu_data[i] = real(in_pars[i]); reNu_data[i] = real(in_pars[i+5]);
-            };
-            TVectorD reMu(4, reMu_data), reNu(4, reNu_data);
-            TVectorD imMu = M*reMu, imNu = M*reNu;
-            
-            //------------------------------------------------------------------------
-            // Now do the same for the H's 
-
-            // These inhabit basis functions 9 & 10
-            std::array<isobar,3> H;
-            H[0] = nullptr;
-            H[1] = get_isobar(id::dI3_I2_P1); H[2] = get_isobar(id::dI3_I2_S2); 
-            for (uint i = 1; i <= 2; i++)
-            {
-                for (uint n = 0; n <= 1; n++)
-                {
-                    A[i][n] = H[i]->basis_function(n+9, 0);
-                    B[i][n] = H[i]->basis_derivative<1>(n+9, 0, eps);
-                    C[i][n] = H[i]->basis_derivative<2>(n+9, 0, eps)/2.;
-                };
-            };
-
-            // Construct the 4x4 matrix of Taylor invariants
-            // First index is which invariant, and second is basis_id
-            TArrayD reTp_data(4), imTp_data(4);
-            for (uint n = 0; n <= 1; n++)
-            {
-                // See second rows of Eq. 6.5 in [1]
-                std::array<complex,2> Tp;
-                Tp[0] = 3*A[1][n] - B[2][n] + 9*s0*(B[1][n] + 2*C[1][n]);
-                Tp[1] = 3*B[1][n] + C[2][n] + 9*s0*C[1][n];
-                               
-                for (int j = 0; j <= 1; j++)
-                {
-                    reTp_data[2*j+n] = real(Tp[j]);  imTp_data[2*j+n] = imag(Tp[j]);
-                };
-            };
-            TMatrixD reTp(2,2, reTp_data.GetArray()), imTp(2,2, imTp_data.GetArray());
-            TMatrixD Mp = reTp.Invert()*imTp; Mp *= -1;
-
-            Double_t reNup_data[2];
-            for (int i = 0; i <= 1; i++) reNup_data[i] = real(in_pars[i+9]);
-            TVectorD reNup(2, reNup_data), imNup = Mp*reNup;
-
-            //------------------------------------------------------------------------
-            // Finally repackaged and return
-            std::vector<complex> out_pars;
-            for (int i = 0; i <= 3; i++) out_pars.push_back(reMu[i] +I*imMu[i]);
-            out_pars.push_back(in_pars[4]); // Skip this one
-            for (int i = 0; i <= 3; i++) out_pars.push_back(reNu[i] +I*imNu[i]);
-            for (int i = 0; i <= 1; i++) out_pars.push_back(reNup[i]+I*imNup[i]);
-            return out_pars;
-        };
-
-        inline double combinatorial_factor(){ return current->combinatorial_factor(); };
         inline complex prefactor_s(id iso_id, complex s, complex t, complex u)
-        { return current->prefactor_s(iso_id, s, t, u); };
-        inline complex prefactor_t(id iso_id, complex s, complex t, complex u)
-        { return current->prefactor_t(iso_id, s, t, u); };
-        inline complex prefactor_u(id iso_id, complex s, complex t, complex u)
-        { return current->prefactor_u(iso_id, s, t, u); };
-
-        inline void set_option(option opt)
         {
-            switch (opt)
+            switch (iso_id)
             {
-                case (option::P_ppm): current = p_ppm; return;
-                case (option::P_zzp): current = p_zzp; return;
-                case (option::L_pmz): current = L_pmz; return;
-                case (option::S_pmz): current = S_pmz; return;
-                case (option::L_zzz): current = L_zzz; return;
-                default: return;
+                case id::I1_S0: return 1;
+                case id::I1_S2: return -2./3;
+                default: return 0;
             };
         };
+        inline complex prefactor_t(id iso_id, complex s, complex t, complex u)
+        {
+            switch (iso_id)
+            {
+                case id::I1_P1: return (s-u);
+                case id::I1_S2: return 1;
+                default: return 0;
+            };
+        };
+        inline complex prefactor_u(id iso_id, complex s, complex t, complex u)
+        {
+            return prefactor_t(iso_id, s, u, t);
+        };
+    };
+    
+    // I_3π = 2 amplitude
+    class I2 : public raw_amplitude
+    {
+        public:
 
-        private:
-        amplitude current; 
-        amplitude p_ppm, p_zzp, L_pmz, S_pmz, L_zzz;
+        I2(kinematics kin, std::string id) : raw_amplitude(kin,id){};
+
+        inline complex prefactor_s(id iso_id, complex s, complex t, complex u)
+        {
+            return (iso_id == id::I_S2) ? 1 : 0;
+        };
+        inline complex prefactor_t(id iso_id, complex s, complex t, complex u)
+        {
+            switch (iso_id)
+            {
+                case id::I2_P1: return 3*(s-u)/2;
+                case id::I1_S2: return -1./2;
+                default: return 0;
+            };
+        };
+        inline complex prefactor_u(id iso_id, complex s, complex t, complex u)
+        {
+            return prefactor_t(iso_id, s, u, t);
+        };
+    };
+
+    // ------------------------------------------------------------------------------
+    // These are the physical amplitudes in the charged basis
+
+    class KtoPPM : public raw_amplitude
+    {
+        public: 
+        
+        KtoPPM(kinematics xkin, std::string id) : raw_amplitude(xkin, id)
+        {
+            F = new_amplitude<I1>(xkin);
+            H = new_amplitude<I2>(xkin);
+        };
+
+        inline complex evaluate(complex s, complex t, complex u)
+        {
+            return F(t,s,u) + F(u,t,s) + H(s,t,u);
+        };
+
+        private: 
+        amplitude F, H;
+    };
+
+    class KtoZZP : public raw_amplitude
+    {
+        public: 
+        
+        KtoZZP(kinematics xkin, std::string id) : raw_amplitude(xkin, id)
+        {
+            F = new_amplitude<I1>(xkin);
+            H = new_amplitude<I2>(xkin);
+        };
+
+        inline complex evaluate(complex s, complex t, complex u)
+        {
+            return F(s,t,u) + H(s,t,u);
+        };
+
+        private: 
+        amplitude F, H;
     };
 };
 

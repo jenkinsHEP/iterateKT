@@ -1,5 +1,5 @@
-// Isobars relevant for the decay of isoscalar meson with JP = 0- into 3pi
-// This allows transitions from I_3pi = 0, 1, 2
+// Isobars relevant for the decay of isoscalar meson with JP = 0- into 3π
+// This allows transitions from I_3π = 0, 1, 2
 // 
 // ------------------------------------------------------------------------------
 // Author:       Daniel Winney (2024)
@@ -25,17 +25,17 @@ namespace iterateKT
     // ------------------------------------------------------------------------------
     // All id's for different isobars
  
-    enum class id : unsigned int
-    {   
-        I0_P1,                    // I_3pi = 0 
-        I1_S0, I1_P1, I1_S2,      // I_3pi = 1
-        I2_P1, I2_S2              // I_3pi = 2
+    enum class id : unsigned int // |   I_3π
+    {                            // |-----------
+        I0_P1,                   // |    0 
+        I1_S0, I1_P1, I1_S2,     // |    1
+        I2_P1, I2_S2             // |    2
     };
 
     // ------------------------------------------------------------------------------
-    // Isobars with total I_3pi = 0
+    // Isobars with total I_3π = 0
 
-    // I_3pi = 0, I_2pi = 0, P-wave isobar
+    // I_3π = 0, I_2π = 0, P-wave isobar
     class I0_P1 : public raw_isobar
     {
         public: 
@@ -44,18 +44,14 @@ namespace iterateKT
         inline complex ksf_kernel(id iso_id, complex s, complex t)
         { 
             double  r  = _kinematics->r(); complex kz = _kinematics->kz(s,t);
-            switch (iso_id)
-            {
-                case id::I0_P1: return -9*kz*(s-r+kz/3);
-                default:         return 0;
-            };
+            return (iso_id == id::I0_P1) ? -9*kz(s-r+kz/3) : 0;
         };
     };
 
     // ------------------------------------------------------------------------------
-    // Isobars with total I_3pi = 1
+    // Isobars with total I_3π = 1
     
-    // I_3pi = 1, I_2pi = 0, S-wave isobar
+    // I_3π = 1, I_2π = 0, S-wave isobar
     class I1_S0 : public raw_isobar
     {
         public: 
@@ -75,7 +71,7 @@ namespace iterateKT
         class phase_shift _delta0;
     };
 
-    // I_3pi = 1, I_2pi = 1, P-wave
+    // I_3π = 1, I_2π = 1, P-wave
     class I1_P1 : public raw_isobar
     {
         public: 
@@ -94,7 +90,7 @@ namespace iterateKT
         };
     };
 
-    // I_3pi = 1, I_2pi = 2, S-wave
+    // I_3π = 1, I_2π = 2, S-wave
     class I1_S2 : public raw_isobar
     {
         public: 
@@ -114,9 +110,9 @@ namespace iterateKT
     };
 
     // ------------------------------------------------------------------------------
-    // Isobars with total I_3pi = 2
+    // Isobars with total I_3π = 2
 
-    // I_3pi = 2, I_2pi = 1, P-wave
+    // I_3π = 2, I_2π = 1, P-wave
     class I2_P1 : public raw_isobar
     {
         public: 
@@ -135,7 +131,7 @@ namespace iterateKT
         class phase_shift _delta1;
     };
 
-    // I_3pi = 2, I_2pi = 2, S-wave
+    // I_3π = 2, I_2π = 2, S-wave
     class I2_S2 : public raw_isobar
     {
         public: 

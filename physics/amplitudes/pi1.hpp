@@ -41,8 +41,6 @@ namespace iterateKT
         return sets;
     };
 
-    // This defines the full amplitude, i.e. how the isobars are combined
-    // Here is where we usually put the isospin combinations etc
     class pi1 : public raw_amplitude
     {
         public: 
@@ -58,7 +56,6 @@ namespace iterateKT
         static constexpr double _mu2 = _mu*_mu;
         static constexpr double _eps = 1E-5;
 
-        // If sig is complex, just evaluate all the square roots naively
         static inline complex deck(complex t, complex M2, complex s)
         {
             // Masses and momenta

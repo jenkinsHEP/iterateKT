@@ -80,7 +80,6 @@ namespace iterateKT
 
             _a = pow(_k*PI-d, 2)/_match/dp;
             _b =    (_k*PI-d)   /_match/dp - 1;
-            if (_b < -1) warning("phase_shift", "Asymptotic matching exhibits pole!");
         };
 
         inline double asymptotic(double s)
