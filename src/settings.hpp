@@ -30,7 +30,6 @@ namespace iterateKT
         inline phase_args get_phase(id x)
         {
             for (auto y : _phase_shifts) if (x == std::get<0>(y)) return std::get<1>(y);
-            // fatal("settings::get_phase", "Cannot find phase!");
             return phase_args();
         };
 

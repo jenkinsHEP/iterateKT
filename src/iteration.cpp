@@ -37,6 +37,7 @@ namespace iterateKT
             {
                 _below_pth_expansion.push_back({0,0,0,0});
                 _above_pth_expansion.push_back({0,0,0,0});
+                continue;
             };
 
             double pth_eps = _settings._expansion_offsets[1];

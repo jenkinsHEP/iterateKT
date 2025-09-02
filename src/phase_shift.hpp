@@ -72,7 +72,7 @@ namespace iterateKT
         {
             // This can be any function so long as it 
             // and its first derivative vanish at s = _match;
-            double b = pow((s-_match)/_tau, 2);
+            double b = pow(_tau*(s-_match), 2);
             return _delta.Eval(_match)*exp(-b)+(1-exp(-b))*_k*PI;
         };
     };
