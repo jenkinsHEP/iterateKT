@@ -19,6 +19,7 @@ namespace iterateKT
         using ROOT::Math::Interpolator;
 
         _sth = _kinematics->sth(); _pth = _kinematics->pth(); _rth = _kinematics->rth();
+        _skip_exclusion = (dat._s_list.back() < _pth);
 
         auto interp_type = _settings._interpolation_type;
         // Load up the interpolators from the input data
@@ -32,6 +33,12 @@ namespace iterateKT
             double sth_eps = _settings._expansion_offsets[0];
             _sth_expansion.push_back(rthreshold_expansion(i, _sth, +sth_eps));
             
+            if (_skip_exclusion)
+            {
+                _below_pth_expansion.push_back({0,0,0,0});
+                _above_pth_expansion.push_back({0,0,0,0});
+            };
+
             double pth_eps = _settings._expansion_offsets[1];
             _below_pth_expansion.push_back(pthreshold_expansion(i, -pth_eps));
             _above_pth_expansion.push_back(pthreshold_expansion(i, +pth_eps));
@@ -40,6 +47,8 @@ namespace iterateKT
             _below_rth_expansion.push_back(rthreshold_expansion(i, _rth, -rth_eps));
             _above_rth_expansion.push_back(rthreshold_expansion(i, _rth, +rth_eps));
         };
+
+        if (_skip_exclusion) return;
 
         // Finally, because we have singularities at pth, evaluate below and above it
         // and interpolate in between to get a smooth curve
@@ -255,6 +264,7 @@ namespace iterateKT
 
         // If we're too close to the real line, we evalaute with ieps perscriptions
         double s = real(sc), eps = sign(imag(sc))*_settings._infinitesimal;
+        if (_skip_exclusion) return disperse_with_cauchy(i, s+I*eps, {_sth, _settings._cutoff});
 
         // Split the integrals into two pieces, one which contains the pth singularity
         // and another with the cauchy singularity

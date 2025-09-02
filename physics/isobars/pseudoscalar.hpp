@@ -68,7 +68,6 @@ namespace iterateKT
                 default:         return 0;
             };
         };
-        class phase_shift _delta0;
     };
 
     // I_3π = 1, I_2π = 1, P-wave
@@ -128,7 +127,6 @@ namespace iterateKT
                 default:         return 0;
             };
         };
-        class phase_shift _delta1;
     };
 
     // I_3π = 2, I_2π = 2, S-wave

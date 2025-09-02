@@ -78,6 +78,9 @@ namespace iterateKT
             }
         };
 
+        // If we cutoff before pth we dont need to exclude it
+        if (order == 2) return;
+
         // We also need to be able to exclude a part of the isobars around pth
         int n_ex = _settings._exclusion_points/2;
         double low, high;
@@ -211,7 +214,6 @@ namespace iterateKT
                                                "Trying to evaluate angular integral below threshold!", NaN<complex>());
         
         int region = (s > _kinematics->B()) + (s > _kinematics->C()) + (s > _kinematics->D());
-        
         switch (region)
         {
             // Both s+ and s- real and above cut
@@ -231,7 +233,8 @@ namespace iterateKT
                      + linear_segment(basis_id, {sm, _kinematics->sth(), -1}, s, previous); //-ieps
             };
             // In the curved "egg" portion
-            case 2: return curved_segment(basis_id, s, previous);
+            case 2:  return curved_segment(basis_id, s, previous);
+            default: return 0.;
         };
 
         return NaN<complex>();
@@ -252,7 +255,6 @@ namespace iterateKT
                 complex K = ksf_kernel(previous->get_id(),s,t);
                 if (is_zero(K)) continue;
                 sum += K*previous->basis_function(basis_id,t+pm*_ieps);
-
             };
             return sum;
         };
