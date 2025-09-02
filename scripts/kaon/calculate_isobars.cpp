@@ -50,7 +50,7 @@ void calculate_isobars()
     // Plot Results
 
     plotter plotter;
-    double smin =  -0.06;
+    double smin =  +0.06;
     double smax =  +0.14;
 
     auto plot_basis = [&](isobar isobar, int i, std::string label)
