@@ -21,45 +21,72 @@ namespace iterateKT
         // Add the 'zeroth' iteration to the list
         _iterations.push_back(new_iteration());
         _ieps =  I*_settings._infinitesimal;
-        double pth = _kinematics->pth();
+        double sth = _kinematics->sth(), pth = _kinematics->pth();
 
         // We interpolate different regions with different graining
-        // Each si marks a boundary of a region 
+        // Each s[i] marks a boundary of a region interpolated with N[i] points
         // eps is added to make a gap between regions and ensure each
         // interval is monotonic increasing
-        double eps = _settings._interpolation_offset;
-        double s0  = _kinematics->sth();
-        double s1  = pth - 1.5*_settings._expansion_offsets[1] - eps; // This region is around the point we will 
-        double s2  = pth + 1.5*_settings._expansion_offsets[1];       // expand the angular average around pth
-        double s3  = _settings._intermediate_energy;
-        double s4  = _settings._cutoff;
+        double eps   = _settings._interpolation_offset;
+        double xi    = _settings._expansion_offsets[1];
+        double s_cut = _settings._cutoff;
+        double s_int = _settings._intermediate_energy;
 
-        if (s3 <= s2 || s2 <= s1) fatal("Intermediate energy chosen below or too close to pseudo-threshold! This will cause interpolation troubles...");
-        
-        std::array<int,3> Ns = _settings._interpolation_points;
-        int N_0  = Ns[0];
-        int N_1  = int((s1 - s0)/(s3 - s0)*N_0);
-        int N_2  = Ns[1];
-        int N_3  = N_0 - N_1;
-        int N_4  = Ns[2];
+        int order = (pth > s_int) + (pth > s_cut);
+        std::array<double, 5> s = {sth, pth-1.5*xi-eps, pth+1.5*xi, s_cut, s_int};
+        std::sort(s.begin(), s.end());
 
-        for (int i = 0; i < N_1; i++) _s_list.push_back(s0+i*(s1-s0)/(N_1-1));
-        s1 += eps;
-        for (int i = 0; i < N_2; i++) _s_list.push_back(s1+i*(s2-s1)/(N_2-1));
-        s2 += eps;
-        for (int i = 0; i < N_3; i++) _s_list.push_back(s2+i*(s3-s2)/(N_3-1));
-        s3 += eps;
-        for (int i = 0; i < N_4; i++) _s_list.push_back(s3+i*(s4-s3)/(N_4-1));
+        std::array<int,3> N = _settings._interpolation_points;
+        std::array<int,4> n;
+        switch (order)
+        {
+            case 0: // {sth, pth-, pth+, s_int, s_cut}
+            {
+                n[0] = int((s[1]-s[0])/(s[3]-s[0])*N[0]); // s0 -> s1
+                n[1] = N[1];                              // s1 -> s2
+                n[2] = N[0] - n[0];                       // s2 -> s3
+                n[3] = N[2];                              // s3 -> s4
+                break;
+            };
+            case 1: // {sth, s_int, pth-, pth+, s_cut}
+            {
+                n[0] = N[0];
+                n[1] = int((s[2]-s[1])/(s[4]-s[1])*N[2]);
+                n[2] = N[1];
+                n[3] = N[2] - n[1];
+                break;
+            };
+            case 2: // {sth, s_int, s_cut, pth-, pth+}
+            {
+                n[0] = N[0];
+                n[1] = N[2];
+                n[2] = 0;
+                n[3] = 0;
+                break;
+            };
+            default: fatal("isobar::initialize()", "Weird error! Don't know how you got here");
+        }
 
-                // We also need to be able to excluse a part of the isobars around pth
-        int N = _settings._exclusion_points/2;
+        // Populate the s values we need to evaluate at
+        for (int i = 0; i < 4; i++)
+        {
+            for (int j = 0; j < n[i]; j++)
+            {
+                double s1 = s[i]+(i!=0)*eps, s2 = s[i+1];
+                double x = s1 + j*(s2-s1)/(n[i]-1);
+                _s_list.push_back(x);
+            }
+        };
+
+        // We also need to be able to exclude a part of the isobars around pth
+        int n_ex = _settings._exclusion_points/2;
         double low, high;
-        low  = (pth - 2*_settings._exclusion_offsets[0]);
-        high = (pth -   _settings._exclusion_offsets[0]);
-        for (int k = 0; k <= N; k++) _s_around_pth.push_back(low-k*(low-high)/N);
-        low  = (pth +   _settings._exclusion_offsets[1]);
-        high = (pth + 2*_settings._exclusion_offsets[1]);
-        for (int k = 0; k <= N; k++) _s_around_pth.push_back(low-k*(low-high)/N);
+        low  = pth - 2*_settings._exclusion_offsets[0];
+        high = pth -   _settings._exclusion_offsets[0];
+        for (int k = 0; k <= n_ex; k++) _s_around_pth.push_back(low-k*(low-high)/n_ex);
+        low  = pth +   _settings._exclusion_offsets[1];
+        high = pth + 2*_settings._exclusion_offsets[1];
+        for (int k = 0; k <= n_ex; k++) _s_around_pth.push_back(low-k*(low-high)/n_ex);
     };
 
     // Save an interpolation of the LHC since this never changes and is called a lot
