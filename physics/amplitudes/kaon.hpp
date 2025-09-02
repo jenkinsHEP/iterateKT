@@ -33,7 +33,7 @@ namespace iterateKT
     inline settings default_settings()
     {
         settings sets;
-        sets._exclusion_points        = 30;
+        sets._exclusion_points        = 20;
         sets._exclusion_offsets       = {3.E-2, 5E-2};
         sets._infinitesimal           = 1E-8;
         sets._intermediate_energy     = 1.0;
@@ -41,15 +41,15 @@ namespace iterateKT
         sets._interpolation_offset    = 1E-4;
         sets._interpolation_points    = {400, 10, 100};
 
-        double xi_sth = 1E-4,   eps_sth = 1E-4;
+        double xi_sth = 1E-3,   eps_sth = 1E-3;
         double xi_pth = 1E-4,   eps_pth = 1E-3;
         double xi_rth = 2E-2,   eps_rth = 2E-2;
         sets._matching_intervals  = {xi_sth,  xi_pth,  xi_rth };
         sets._expansion_offsets   = {eps_sth, eps_pth, eps_rth};
 
-        phase_args iso_0 = {"madrid/delta_00.dat", 1.69,  1};
-        phase_args iso_1 = {"madrid/delta_11.dat", 1.69,  1};
-        phase_args iso_2 = {"madrid/delta_02.dat", 9.99,  0};
+        phase_args iso_0 = {"madrid/delta_00.dat", 1.69,  1, 1};
+        phase_args iso_1 = {"madrid/delta_11.dat", 1.69,  1, 1};
+        phase_args iso_2 = {"madrid/delta_02.dat", 9.99,  0, 1};
         sets._phase_shifts = { {id::I0_P1, iso_1}, 
                                {id::I1_S0, iso_0}, {id::I1_P1, iso_1}, {id::I1_S2, iso_2},
                                {id::I2_P1, iso_1}, {id::I2_S2, iso_2}};

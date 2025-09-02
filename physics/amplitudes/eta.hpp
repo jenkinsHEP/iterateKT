@@ -43,9 +43,9 @@ namespace iterateKT
         sets._matching_intervals  = {xi_sth,  xi_pth,  xi_rth };
         sets._expansion_offsets   = {eps_sth, eps_pth, eps_rth};
 
-        phase_args iso_0 = {"bern/phase_pipi_0.dat", 114., 1};
-        phase_args iso_1 = {"bern/phase_pipi_1.dat", 80,   1};
-        phase_args iso_2 = {"bern/phase_pipi_2.dat", 800,  0};
+        phase_args iso_0 = {"bern/phase_pipi_0.dat", 114., 1, 1};
+        phase_args iso_1 = {"bern/phase_pipi_1.dat", 800., 1, 1};
+        phase_args iso_2 = {"bern/phase_pipi_2.dat", 800,  0, 1};
         sets._phase_shifts = { {id::I0_P1, iso_1}, 
                                {id::I1_S0, iso_0}, {id::I1_P1, iso_1}, {id::I1_S2, iso_2},
                                {id::I2_P1, iso_1}, {id::I2_S2, iso_2}};
