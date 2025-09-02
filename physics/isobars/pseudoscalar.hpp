@@ -44,7 +44,7 @@ namespace iterateKT
         inline complex ksf_kernel(id iso_id, complex s, complex t)
         { 
             double  r  = _kinematics->r(); complex kz = _kinematics->kz(s,t);
-            return (iso_id == id::I0_P1) ? -9*kz(s-r+kz/3) : 0;
+            return (iso_id == id::I0_P1) ? -9*kz*(s-r+kz/3) : 0;
         };
     };
 

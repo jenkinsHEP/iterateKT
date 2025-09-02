@@ -27,6 +27,12 @@ namespace iterateKT { namespace COMPASS
             };
         };
 
+        // Dont need any additional processing
+        static std::vector<complex> process_fitter_parameters(std::vector<complex> pars, amplitude to_fit)
+        {
+            return pars;
+        };
+
         // Function to minimize
         // Filters whether we're looking at the real or imaginary parts 
         static double fcn(std::vector<data_set> & data_vector, amplitude to_fit)

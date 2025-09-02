@@ -333,7 +333,7 @@ namespace iterateKT
             // Sometimes we want the amplitude to do something to the fitter output
             // Before we actually save them, run through amplitudes processing function
             // By default this does nothing
-            std::vector<complex> processed = _amplitude->process_fitter_parameters(pars);
+            std::vector<complex> processed = F::process_fitter_parameters(pars, _amplitude);
     
             // Pass parameters to the amplitude
             _amplitude->set_parameters(processed);

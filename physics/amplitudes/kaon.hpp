@@ -99,14 +99,14 @@ namespace iterateKT
 
         inline complex prefactor_s(id iso_id, complex s, complex t, complex u)
         {
-            return (iso_id == id::I_S2) ? 1 : 0;
+            return (iso_id == id::I2_S2) ? 1 : 0;
         };
         inline complex prefactor_t(id iso_id, complex s, complex t, complex u)
         {
             switch (iso_id)
             {
                 case id::I2_P1: return 3*(s-u)/2;
-                case id::I1_S2: return -1./2;
+                case id::I2_S2: return -1./2;
                 default: return 0;
             };
         };
@@ -131,7 +131,7 @@ namespace iterateKT
 
         inline complex evaluate(complex s, complex t, complex u)
         {
-            return F(t,s,u) + F(u,t,s) + H(s,t,u);
+            return F->evaluate(t,s,u) + F->evaluate(u,t,s) + H->evaluate(s,t,u);
         };
 
         private: 
@@ -150,7 +150,7 @@ namespace iterateKT
 
         inline complex evaluate(complex s, complex t, complex u)
         {
-            return F(s,t,u) + H(s,t,u);
+            return F->evaluate(s,t,u) + H->evaluate(s,t,u);
         };
 
         private: 

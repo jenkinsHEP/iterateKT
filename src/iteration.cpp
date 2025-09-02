@@ -31,7 +31,7 @@ namespace iterateKT
             // derivatives multiple times
             double sth_eps = _settings._expansion_offsets[0];
             _sth_expansion.push_back(rthreshold_expansion(i, _sth, +sth_eps));
-
+            
             double pth_eps = _settings._expansion_offsets[1];
             _below_pth_expansion.push_back(pthreshold_expansion(i, -pth_eps));
             _above_pth_expansion.push_back(pthreshold_expansion(i, +pth_eps));
