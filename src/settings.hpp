@@ -33,6 +33,9 @@ namespace iterateKT
             return phase_args();
         };
 
+        // Often (e.g. pi pi S-wave) theres an extra cusp which slows down integration
+        double _extra_cusp = 0;
+
         // We use variable iterations to improve convergence by articially surpressing KT effects
         // At each next iteration we decrease the surpression linearly until we arrive back 
         // at the original KT equations

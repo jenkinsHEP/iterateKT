@@ -222,15 +222,41 @@ namespace iterateKT
             {
                 double sp = real(_kinematics->t_plus(s));
                 double sm = real(_kinematics->t_minus(s));
+
+                // Check if we have cusp
+                double sc = _settings._extra_cusp;
+                if (sp > sc && sm < sc)
+                {
+                    return linear_segment(basis_id, {sm, sc, 0}, s, previous) 
+                         + linear_segment(basis_id, {sc, sp, 0}, s, previous);
+                };
                 return linear_segment(basis_id, {sm, sp, 0}, s, previous);
             };
             // s+ is above cut but s- is below cut
             case 1:
             {
+                complex integ_above, integ_below;
+                double sth = _kinematics->sth(), sc = _settings._extra_cusp;
+
+                // Check if we have cusp
                 double sp = real(_kinematics->t_plus(s));
+                if (sp > sc && sc > sth)
+                {
+                    integ_above = linear_segment(basis_id, {sth, sc, +1}, s, previous) 
+                                + linear_segment(basis_id, {sc,  sp, +1}, s, previous);
+                }
+                else integ_above = linear_segment(basis_id, {sth, sp, +1}, s, previous);
+
+                // Do same with the segment below cut
                 double sm = real(_kinematics->t_minus(s));
-                return linear_segment(basis_id, {_kinematics->sth(), sp, +1}, s, previous)  //+ieps
-                     + linear_segment(basis_id, {sm, _kinematics->sth(), -1}, s, previous); //-ieps
+                if (sm > sc && sc > sth)
+                {
+                    integ_below = linear_segment(basis_id, {sm, sc,   -1}, s, previous) 
+                                + linear_segment(basis_id, {sc,  sth, -1}, s, previous); 
+                }
+                else integ_below = linear_segment(basis_id, {sm, sth, -1}, s, previous);
+
+                return integ_above + integ_below;
             };
             // In the curved "egg" portion
             case 2:  return curved_segment(basis_id, s, previous);
