@@ -76,16 +76,25 @@ void fit()
     // -----------------------------------------------------------------------
     // Set up fitter
 
-    std::vector<iterateKT::complex> pars=  {0.50306364, -2.8037792, -0.42873702, 1.8796461};
-    auto ppars = kaon::fit::process_fitter_parameters(pars, amp);
-    amp->set_parameters(ppars);
-    amp->set_option(option::P_ppm);
-    print(amp->width()); exit(1);
+    // std::vector<iterateKT::complex> pars=  {1210.2084, -5965.0633, -1071.8057, 9163.4163};
+    // auto ppars = kaon::fit::process_fitter_parameters(pars, amp);
+    // amp->set_parameters(ppars);
+    // amp->set_option(option::P_ppm);
+    // // auto dpars = amp->get_dalitz_parameters(1E-6);
+    // // print("Width =", amp->width());
+    // // print("g =", dpars[0]);
+    // // print("h =", dpars[1]);
+    // // print("k =", dpars[3]);
+    // print(ppars);
+    // // amp->set_option(option::P_zzp);
+    // // dpars = amp->get_dalitz_parameters(1E-3);
+    // // print("Width =", amp->width());
+    // // print(dpars[0], dpars[1], dpars[3]);
+    // exit(1);
 
     fitter<kaon::fit> fitter(amp);
 
-    // Fit tends to be slow so its nice to have print level != 0 to see some progress
-    fitter.set_print_level(2);
+    fitter.set_print_level(1);
     
     // Add data from above
     fitter.add_data(PtoPPM);
@@ -96,6 +105,6 @@ void fit()
     fitter.set_parameter_labels(labels);
     for (auto par : labels) fitter.make_real(par);
 
-    std::vector<iterateKT::complex> initial_guess = {1., 1., 1., 1.};
+    std::vector<iterateKT::complex> initial_guess = {1537.7541, -8764.3614, 264.82228, 9930.3531};
     fitter.do_fit(initial_guess);
 };

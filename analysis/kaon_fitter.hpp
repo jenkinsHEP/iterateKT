@@ -50,7 +50,7 @@ namespace iterateKT { namespace kaon
             double chi2 = 0;
 
             // χ² from Γ        
-            if (type == kAll || type == kWidth) chi2 += chi2_width(data, to_fit); 
+            if (type == kAll || type == kWidth)   chi2 += chi2_width(data, to_fit); 
 
             // χ² from g h k
             std::array<double,3> chi2_ghk = {0,0,0};
@@ -72,10 +72,9 @@ namespace iterateKT { namespace kaon
         static std::array<double,3> chi2_dpars(const data_set & data, amplitude to_fit)
         {
             double mp2  = M_PION_PM*M_PION_PM;
-            auto dpars  = to_fit->get_dalitz_parameters(1E-5, {mp2, mp2});
-            double g_th = dpars[0], h_th = dpars[1], k_th = dpars[3];
+            auto dpars  = to_fit->get_dalitz_parameters(1E-6, {mp2, mp2});
 
-            bool n = (data._type == kAll);
+            bool n = (data._type == kAll); 
             std::array<double,3> chi2, ghk = {dpars[0], dpars[1], dpars[3]};
             for (int i = 0; i < 3; i++) chi2[i] = norm((ghk[i]-data._z[i+n])/data._dz[i+n]);
             return chi2;
@@ -85,7 +84,7 @@ namespace iterateKT { namespace kaon
         // given by requiring Taylor invariants have vanishing imaginary parts
         static std::vector<complex> process_fitter_parameters(std::vector<complex> in_pars, amplitude amp)
         {
-            double eps = 1E-5, r = amp->get_kinematics()->s0();
+            double eps = 1E-6, r = amp->get_kinematics()->s0();
 
             //------------------------------------------------------------------------
             // First we fix the imaginary parts of the M's and N's (total 3π I=1)
@@ -100,7 +99,7 @@ namespace iterateKT { namespace kaon
             // First index is isospin, second is basis function ID
             for (uint i = 0; i < 3; i++)
             {
-                for (uint n = 0; n <= 2; n++)
+                for (uint n = 0; n < 3; n++)
                 {
                     A[i][n] = F[i]->basis_function(n, 0);
                     B[i][n] = F[i]->basis_derivative<1>(n, 0, eps);
