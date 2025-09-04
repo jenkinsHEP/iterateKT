@@ -453,7 +453,7 @@ namespace iterateKT
         {
             using std::cout; using std::left; using std::endl; using std::setw;
 
-            cout << std::setprecision(8);
+            cout << std::setprecision(12);
             cout << left;
 
             double fcn               = _minuit->MinValue();
