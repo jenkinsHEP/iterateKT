@@ -14,91 +14,6 @@
 
 namespace iterateKT { namespace kaon
 {
-    std::array<double,4> get_masses(option opt)
-    {
-        double mK, m1, m2, m3;
-        switch (opt)
-        {
-            case (option::P_ppm): 
-            {
-                mK = M_KAON_PM; 
-                m1 = M_PION_PM; m2 = M_PION_PM; m3 = M_PION_PM; 
-                break;
-            };
-            case (option::L_zzz):
-            {
-                mK = M_KAON_0; 
-                m1 = M_PION_0;  m2 = M_PION_0;  m3 = M_PION_0; 
-                break;
-            }; 
-            case (option::P_zzp):
-            {
-                mK = M_KAON_PM; 
-                m1 = M_PION_0; m2 = M_PION_0; m3 = M_PION_PM; 
-                break;
-            };
-            case (option::L_pmz):
-            case (option::S_pmz):
-            {
-                mK = M_KAON_0; 
-                m1 = M_PION_PM; m2 = M_PION_PM; m3 = M_PION_0; 
-                break;
-            };
-            default: fatal("kaon::get_masses", "Unknown option!");
-        };
-        return {mK, m1, m2, m3};
-    };
-
-    // Because the kaon mass is so smal, the mass splittings between isospin projections
-    // make a noticable difference in the phase-space.
-    // So, even though we calculate KT isobars in isospin limit, we can integrate with the realistic 
-    complex integrate_over_physical_phasespace(amplitude amp, std::array<option,2> opts)
-    {
-        using namespace boost::math::quadrature;
-        auto ms = get_masses(opts[0]);
-        double mK = ms[0], m1 = ms[1], m2 = ms[2], m3 = ms[3];
-        double sth = norm(m2+m3), pth = norm(mK-m1);
-        double sigma = mK*mK + m1*m1 + m2*m2 + m3*m3;
-        auto dGamma = [amp,sigma,mK,m1,m2,m3,opts](double s)
-        {
-            double kappa = sqrt(kallen(s, mK*mK, m1*m1))*sqrt(kallen(s,m2*m2,m3*m3))/s;
-            double tmin  = (sigma - s - kappa)/2, tmax  = (sigma - s + kappa)/2;
-            auto d2Gamma = [amp,s,opts](double t)
-            {
-                complex A, B;
-                amp->set_option(opts[0]); A = amp->evaluate(s,t);
-                if  (opts[0] == opts[1]) return conj(A)*A;
-                amp->set_option(opts[1]); B = amp->evaluate(s,t);  
-                return conj(A)*B;     
-            };
-            return gauss_kronrod<double,15>::integrate(d2Gamma, tmin, tmax, 0, 1.E-9, NULL);
-        };
-        return gauss_kronrod<double,15>::integrate(dGamma, sth, pth, 0, 1.E-9, NULL);
-    };
-
-    inline double physical_width(amplitude amp, option opt)
-    {
-        auto ms = get_masses(opt);
-        double prefactors = 32*pow(2*PI*ms[0],3)*amp->combinatorial_factor();
-        complex Gam = integrate_over_physical_phasespace(amp, {opt,opt});
-        return real(Gam) / prefactors;
-    };
-
-    inline complex interference_lambda(amplitude amp)
-    {
-        complex num = integrate_over_physical_phasespace(amp,{option::L_pmz,option::S_pmz});
-        complex den = integrate_over_physical_phasespace(amp,{option::L_pmz,option::L_pmz});
-        return num/den;
-    };
-
-    inline std::array<double,5> physical_dalitz_parameters(amplitude amp, option opt)
-    {
-        amp->set_option(opt);
-        auto   ms = get_masses(opt);
-        double s0 = (ms[0]*ms[0] + ms[1]*ms[1] + ms[2]*ms[2] + ms[3]*ms[3])/3.;
-        return amp->get_dalitz_parameters(1E-5, s0, {M_PION_PM*M_PION_PM, M_PION_PM*M_PION_PM});
-    };
-
     // Specify the fitter interface
     struct fit
     {
@@ -153,23 +68,10 @@ namespace iterateKT { namespace kaon
             return norm((gam_th - gam_ex)/dgam_ex);
         };
 
-        // Interference lambda parameter
-        static std::array<double,2> chi2_lambda(const data_set & data, amplitude to_fit)
-        {
-            complex lam_th = interference_lambda(to_fit);
-            complex re_ex = data._z[0], dre_ex = data._dz[0];
-            double chi2_re = norm((real(lam_th) - re_ex)/dre_ex);
-
-            complex im_ex = data._z[1], dim_ex = data._dz[1];
-            double chi2_im = norm((imag(lam_th) - im_ex)/dim_ex);
-            return {chi2_re, chi2_im};
-        };
-
         // Compare g, h, k
         static std::array<double,3> chi2_dpars(const data_set & data, amplitude to_fit)
         {
             auto dpars = physical_dalitz_parameters(to_fit, data._option);
-            // auto dpars = to_fit->get_dalitz_parameters(1.E-3);
 
             double g_th = dpars[0], h_th = dpars[1], k_th = dpars[3];
      
@@ -189,6 +91,65 @@ namespace iterateKT { namespace kaon
                 chi2[2] = norm((k_th - k_ex)/dk_ex);
             };
             return chi2;
+        };
+
+        // We only fit the real parts of the parameters while the imaginary parts are
+        // given by requiring Taylor invariants have vanishing imaginary parts
+        inline std::vector<complex> process_fitter_parameters(std::vector<complex> in_pars, amplitude amp)
+        {
+            double eps = 1E-5, r = _kinematics->s0();
+
+            //------------------------------------------------------------------------
+            // First we fix the imaginary parts of the M's and N's (total 3π I=1)
+            isobar F0 = amp->get_isobar(id::I1_S0);
+            isobar F1 = amp->get_isobar(id::I1_P1);
+            isobar F2 = amp->get_isobar(id::I1_S2);
+            std::array<isobar,3> F = {F0, F1, F2};
+
+            // Coefficients of taylor expansion up to cubic
+            std::array<std::array<complex,3>,3> A, B, C;
+            
+            // First index is isospin, second is basis function ID
+            for (uint i = 0; i < 3; i++)
+            {
+                for (uint n = 0; n <= 2; n++)
+                {
+                    A[i][n] = F[i]->basis_function(n, 0);
+                    B[i][n] = F[i]->basis_derivative<1>(n, 0, eps);
+                    C[i][n] = F[i]->basis_derivative<2>(n, 0, eps)/2.;
+                };
+            };
+
+            // Construct the 3x3 matrix of Taylor invariants
+            // First index is which invariant, and second is basis_id
+            TArrayD reT_data(9), imT_data(9);
+            for (uint n = 0; n < 3; n++)
+            {
+                std::array<complex,4> T;
+                T[0] =   A[0][n] + 4./3*A[2][n] - 3*r*A[1][n] + 3*r*B[2][n] +9*r*r*C[2][n];
+                T[1] =   B[0][n] - 5./3*B[2][n] + 3  *A[1][n] - 9*r*C[2][n];
+                T[2] =   B[1][n] +      C[2][n];
+               
+                for (int j = 0; j < 3; j++)
+                {
+                    reT_data[3*j+n] = real(T[j]);  imT_data[3*j+n] = imag(T[j]);
+                };
+            };
+            TMatrixD reT(3,3,reT_data.GetArray()), imT(3,3,imT_data.GetArray());
+
+            // Now we actually solve the matrix equation relating reMu and imMu
+            TMatrixD M = reT.Invert()*imT; M *= -1;
+
+            Double_t rePars_data[3];
+            for (int i = 0; i < 3; i++) rePars_data[i] = real(in_pars[i]);
+            TVectorD rePars(3, reMu_data), imPars = M*rePars;
+            
+            // Assemble together output vector
+            std::vector<double> out_pars;
+            for (int i = 0; i < 3; i++) out_pars.push_back(rePars[i]+I*imPars[i]);
+            out_pars.push_back(in_pars.back()); // Last one stays real 
+
+            return out_pars;
         };
     };
 }; /* namespace iterateKT */ }; /* namespace kaon_decay */
