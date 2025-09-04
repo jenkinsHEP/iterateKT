@@ -7,16 +7,8 @@
 // Email:        daniel.winney@gmail.com
 // ------------------------------------------------------------------------------
 
-#include "kinematics.hpp"
-#include "amplitude.hpp"
-#include "utilities.hpp"
-#include "colors.hpp"
-#include "constants.hpp"
-#include "timer.hpp"
-#include "basis.hpp"
+#include <filesystem>
 #include "plotter.hpp"
-#include "solver.hpp"
-
 #include "amplitudes/kaon.hpp"
 #include "isobars/pseudoscalar.hpp"
 
@@ -36,15 +28,20 @@ void calculate_isobars()
     // Add all the isobars, note the order they are added will be the order
     // the basis functions are generated
     std::vector<uint> empty = {}; // Pass empty to isobars with no sub polynomials
-    isobar F0 = solver.add_isobar<I1_S0>(2,        id::I1_S0); 
-    isobar F1 = solver.add_isobar<I1_P1>(1,        id::I1_P1); 
-    isobar F2 = solver.add_isobar<I1_S2>(empty, 1, id::I1_S2);
-    isobar H1 = solver.add_isobar<I2_P1>(1,        id::I2_P1); 
-    isobar H2 = solver.add_isobar<I2_S2>(empty, 1, id::I2_S2);
+    isobar F0 = solver.add_isobar<I1_S0>(2,        id::I1_S0, "F0"); 
+    isobar F1 = solver.add_isobar<I1_P1>(1,        id::I1_P1, "F1"); 
+    isobar F2 = solver.add_isobar<I1_S2>(empty, 1, id::I1_S2, "F2");
+    isobar H1 = solver.add_isobar<I2_P1>(1,        id::I2_P1, "H1"); 
+    isobar H2 = solver.add_isobar<I2_S2>(empty, 1, id::I2_S2, "H2");
 
     // Iterate N times
     int N = 6;
     solver.timed_iterate(N);
+
+    // Export the solution so it can be more easily recalled later
+    std::string out_dir = main_dir()+"/scripts/kaon/basis_functions";
+    std::filesystem::create_directory(out_dir);
+    solver.export_solution(out_dir+"/basis");
 
     // -----------------------------------------------------------------------
     // Plot Results
@@ -66,7 +63,7 @@ void calculate_isobars()
 
         auto rF = [&](int j){return [j,isobar,i](double s){return real(isobar->basis_function(j, i, s+IEPS));}; };
         auto iF = [&](int j){return [j,isobar,i](double s){return imag(isobar->basis_function(j, i, s+IEPS));}; };
-       
+
         p.add_curve({smin, smax}, rF(1), dotted(jpacColor::Red));
         p.add_curve({smin, smax}, iF(1), dotted(jpacColor::Blue));
         p.add_curve({smin, smax}, rF(3), dashed(jpacColor::Red));

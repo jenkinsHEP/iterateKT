@@ -19,6 +19,7 @@
 #include "kinematics.hpp"
 #include "settings.hpp"
 #include "phase_shift.hpp"
+#include "amplitude.hpp"
 #include "isobars/pseudoscalar.hpp"
 
 // For a general K_Pi1Pi2Pi3, we have:
@@ -118,43 +119,53 @@ namespace iterateKT
 
     // ------------------------------------------------------------------------------
     // These are the physical amplitudes in the charged basis
+    
+    // Allowed to access both K+ -> pi+pi+pi- and pi0pi0pi+
+    enum class option : unsigned int { P_ppm = 1, P_zzp = 2 };
 
-    class KtoPPM : public raw_amplitude
+    class charged_kaon : public raw_amplitude
     {
         public: 
         
-        KtoPPM(kinematics xkin, std::string id) : raw_amplitude(xkin, id)
+        charged_kaon(kinematics xkin, std::string id) : raw_amplitude(xkin, id)
         {
-            F = new_amplitude<I1>(xkin);
-            H = new_amplitude<I2>(xkin);
+            _F = new_amplitude<I1>(xkin);
+            _H = new_amplitude<I2>(xkin);
         };
 
-        inline complex evaluate(complex s, complex t, complex u)
+        //
+        inline void set_option(option opt){ _charged = (opt == option::P_ppm); };
+
+        // P_ppm(s,t,u) = F(t,s,u) + F(u,t,s) + H(s,t,u)
+        // P_zzp(s,t,u) = F(s,t,u) + H(s,t,u)
+
+        inline complex prefactor_s(id iso_id, complex s, complex t, complex u)
         {
-            return F->evaluate(t,s,u) + F->evaluate(u,t,s) + H->evaluate(s,t,u);
+            complex Fs = (_charged) ? _F->prefactor_s(iso_id, t, s, u) + _F->prefactor_s(iso_id, u, t, s) 
+                                    : _F->prefactor_s(iso_id, s, t, u);
+            return Fs + _H->prefactor_s(iso_id, s, t, u);
         };
+
+        inline complex prefactor_t(id iso_id, complex s, complex t, complex u)
+        {
+            complex Ft = (_charged) ? _F->prefactor_t(iso_id, t, s, u) + _F->prefactor_t(iso_id, u, t, s) 
+                                    : _F->prefactor_t(iso_id, s, t, u);
+            return Ft + _H->prefactor_t(iso_id, s, t, u);
+        };
+
+        inline complex prefactor_u(id iso_id, complex s, complex t, complex u)
+        {
+            complex Fu = (_charged) ? _F->prefactor_u(iso_id, t, s, u) + _F->prefactor_u(iso_id, u, t, s) 
+                                    : _F->prefactor_u(iso_id, s, t, u);
+            return Fu + _H->prefactor_u(iso_id, s, t, u);
+        };
+
+        // Two identical particles
+        inline double combinatorial_factor(){ return 2; }; 
 
         private: 
-        amplitude F, H;
-    };
-
-    class KtoZZP : public raw_amplitude
-    {
-        public: 
-        
-        KtoZZP(kinematics xkin, std::string id) : raw_amplitude(xkin, id)
-        {
-            F = new_amplitude<I1>(xkin);
-            H = new_amplitude<I2>(xkin);
-        };
-
-        inline complex evaluate(complex s, complex t, complex u)
-        {
-            return F->evaluate(s,t,u) + H->evaluate(s,t,u);
-        };
-
-        private: 
-        amplitude F, H;
+        amplitude _F, _H;
+        bool _charged = true;
     };
 };
 

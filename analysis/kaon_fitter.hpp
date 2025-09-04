@@ -10,21 +10,25 @@
 #ifndef KAON_FITTER_HPP
 #define KAON_FITTER_HPP
 
-#include "K_3pi/data.hpp"
+#include "isobars/pseudoscalar.hpp"
 
 namespace iterateKT { namespace kaon
 {
+    
     // Specify the fitter interface
     struct fit
     {
+        // Static identifiers for data_set types
+        static const int kAll = 0, kWidth = 1, kDalitz = 2;
+
         // String letting us know what is being fit
         static std::string data_type(int i)
         {
             switch (i)
             {
-                case kAll:    return "Γ & {g, h, k}";
-                case kHOnly:  return "Γ & h";
-                case kLambda: return "λ";
+                case kAll:     return "Width & {g, h, k}";
+                case kWidth:   return "Width";
+                case kDalitz:  return "{g, h, k}";
                 default: return "ERROR!";
             };
         };
@@ -40,30 +44,26 @@ namespace iterateKT { namespace kaon
         // Indidivudal chi2 from a single data set
         static double chi2(const data_set & data, amplitude to_fit)
         {
-            if (data._type == kLambda)
-            {
-                auto chi2s = chi2_lambda(data, to_fit);
-                return chi2s[0] + chi2s[1];
-            };
-
+            int type = data._type;
             to_fit->set_option(data._option);
-            
-            // output
+
             double chi2 = 0;
 
-            // χ² from Γ
-            chi2 += chi2_width(data, to_fit); 
+            // χ² from Γ        
+            if (type == kAll || type == kWidth) chi2 += chi2_width(data, to_fit); 
 
             // χ² from g h k
-            auto chi2_ghk = chi2_dpars(data, to_fit);
+            std::array<double,3> chi2_ghk = {0,0,0};
+            if (type == kAll || type == kDalitz) chi2_ghk = chi2_dpars(data, to_fit);
             for (auto chi2_i : chi2_ghk) chi2 += chi2_i;
+
             return chi2;
         };
 
         // Compare widths
         static double chi2_width(const data_set & data, amplitude to_fit)
         {
-            double gam_th = physical_width(to_fit, data._option);
+            double gam_th = to_fit->width();
             double gam_ex = data._z[0], dgam_ex = data._dz[0];
             return norm((gam_th - gam_ex)/dgam_ex);
         };
@@ -71,33 +71,21 @@ namespace iterateKT { namespace kaon
         // Compare g, h, k
         static std::array<double,3> chi2_dpars(const data_set & data, amplitude to_fit)
         {
-            auto dpars = physical_dalitz_parameters(to_fit, data._option);
-
+            double mp2  = M_PION_PM*M_PION_PM;
+            auto dpars  = to_fit->get_dalitz_parameters(1E-5, {mp2, mp2});
             double g_th = dpars[0], h_th = dpars[1], k_th = dpars[3];
-     
-            std::array<double,3> chi2;
-            if (data._type == kHOnly)
-            {
-                double  h_ex = data._z[1],  dh_ex = data._dz[1];
-                chi2[1] = norm((h_th - h_ex)/dh_ex);
-                chi2[0] = 0; chi2[2] = 0;
-            }
-            else
-            {
-                double  g_ex = data._z[1],   h_ex = data._z[2],   k_ex = data._z[3];
-                double dg_ex = data._dz[1], dh_ex = data._dz[2], dk_ex = data._dz[3];
-                chi2[0] = norm((g_th - g_ex)/dg_ex);
-                chi2[1] = norm((h_th - h_ex)/dh_ex);
-                chi2[2] = norm((k_th - k_ex)/dk_ex);
-            };
+
+            bool n = (data._type == kAll);
+            std::array<double,3> chi2, ghk = {dpars[0], dpars[1], dpars[3]};
+            for (int i = 0; i < 3; i++) chi2[i] = norm((ghk[i]-data._z[i+n])/data._dz[i+n]);
             return chi2;
         };
 
         // We only fit the real parts of the parameters while the imaginary parts are
         // given by requiring Taylor invariants have vanishing imaginary parts
-        inline std::vector<complex> process_fitter_parameters(std::vector<complex> in_pars, amplitude amp)
+        static std::vector<complex> process_fitter_parameters(std::vector<complex> in_pars, amplitude amp)
         {
-            double eps = 1E-5, r = _kinematics->s0();
+            double eps = 1E-5, r = amp->get_kinematics()->s0();
 
             //------------------------------------------------------------------------
             // First we fix the imaginary parts of the M's and N's (total 3π I=1)
@@ -142,10 +130,10 @@ namespace iterateKT { namespace kaon
 
             Double_t rePars_data[3];
             for (int i = 0; i < 3; i++) rePars_data[i] = real(in_pars[i]);
-            TVectorD rePars(3, reMu_data), imPars = M*rePars;
+            TVectorD rePars(3, rePars_data), imPars = M*rePars;
             
             // Assemble together output vector
-            std::vector<double> out_pars;
+            std::vector<complex> out_pars;
             for (int i = 0; i < 3; i++) out_pars.push_back(rePars[i]+I*imPars[i]);
             out_pars.push_back(in_pars.back()); // Last one stays real 
 
