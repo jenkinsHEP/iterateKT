@@ -121,7 +121,7 @@ namespace iterateKT
     // These are the physical amplitudes in the charged basis
     
     // Allowed to access both K+ -> pi+pi+pi- and pi0pi0pi+
-    enum class option : unsigned int { P_ppm = 1, P_zzp = 2 };
+    enum class option : unsigned int { P_ppm, P_zzp };
 
     class charged_kaon : public raw_amplitude
     {
@@ -129,8 +129,7 @@ namespace iterateKT
         
         charged_kaon(kinematics xkin, std::string id) : raw_amplitude(xkin, id)
         {
-            _F = new_amplitude<I1>(xkin);
-            _H = new_amplitude<I2>(xkin);
+            _F = new_amplitude<I1>(xkin); _H = new_amplitude<I2>(xkin);
         };
 
         //

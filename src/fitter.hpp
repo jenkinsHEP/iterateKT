@@ -222,7 +222,7 @@ namespace iterateKT
             _minuit->Minimize();
             if (_print_level != 0) line();   
 
-            std::cout << "Done! \n";
+            std::cout << "Done (status = " + to_string(_minuit->Status()) +")! \n";
 
             // Timing info
             auto stop     = std::chrono::high_resolution_clock::now();
@@ -232,24 +232,29 @@ namespace iterateKT
             line();
             print_results();
         };
-
+        
         // -----------------------------------------------------------------------
         // Methods related to fit options
-
+        
         // Set the maximum number of calls minuit will do
         inline void set_max_calls(int n){ _max_calls = n; };
         
         // Message level for minuit (0-4)
         inline void set_print_level(int n){ _print_level = n; };
-
+        
         // Change tolerance
         inline void set_tolerance(double tol){ _tolerance = tol; };
 
+        // Change the stategy
+        inline void set_strategy(uint x){ _strategy = x; };
+        
         // Number of degrees of freedom
+        inline int status()    { return _minuit->Status(); };
         inline int    dof()    { return _N - _minuit->NFree(); };
         inline double fcn()    { return _minuit->MinValue(); };
         inline double fcn_dof(){ return _minuit->MinValue()/dof(); };
-
+        inline std::vector<complex> pars(){ return complex_convert(_minuit->X()); };
+        
         private:
 
         // This ptr should point to the amplitude to be fit
@@ -264,6 +269,7 @@ namespace iterateKT
         // -----------------------------------------------------------------------
         // MINUIT handling 
 
+        int _strategy      = 1;
         int _print_level   = 0;     // Error code for MINUIT
         int _max_calls     = 1E6;   // Max calls allowed for minimization fcn
         double _tolerance  = 1.E-6; // Minimization tolerance
@@ -281,6 +287,7 @@ namespace iterateKT
             _minuit->SetTolerance(_tolerance);
             _minuit->SetPrintLevel(_print_level);
             _minuit->SetMaxFunctionCalls(_max_calls);
+            _minuit->SetStrategy(_strategy);
 
             // Iterate over each _par but also keep track of the index in starting_guess 
             // because parameters might be fixed, these indexes dont necessarily line up

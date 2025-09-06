@@ -13,10 +13,13 @@
 #include "kaon_fitter.hpp"
 #include "amplitudes/kaon.hpp"
 #include "isobars/pseudoscalar.hpp"
+#include "TRandom.h"
 
 void fit()
 {
     using namespace iterateKT;
+
+    uint N = 10;
 
     // -----------------------------------------------------------------------
     
@@ -43,68 +46,120 @@ void fit()
 
     // -----------------------------------------------------------------------
     // Set up data
+    
+    double cgam, cdgam;
+    cgam =  2.9590,  cdgam = 218E-4;
+    data_set wPtoPPM;
+    wPtoPPM._id     = "K+ -> pi+ pi+ pi-";
+    wPtoPPM._z      = {cgam};
+    wPtoPPM._dz     = {cgam};
+    wPtoPPM._N      = 1;
+    wPtoPPM._option = option::P_ppm;
+    wPtoPPM._type   = kaon::fit::kWidth;
+    
+    // K+ -> pi+ pi+ pi- dalitz parameters
+    double cg, cdg, ch, cdh, ck, cdk;
+    cg   = -0.21134, cdg   = 17E-5;
+    ch   =  0.0185,  cdh   = 40E-5;
+    ck   = -0.00463, cdk   = 14E-5;
 
-    double gam, dgam, g, dg, h, dh, k, dk;
-
-    // K+ -> pi+ pi+ pi- width and dalitz parameters
-    gam =  2.9590,  dgam = 218E-4;
-    g   = -0.21134, dg   = 17E-5;
-    h   =  0.0185,  dh   = 4E-4;
-    k   = -0.00463, dk   = 14E-5;
-
-    data_set PtoPPM;
-    PtoPPM._id     = "K+ -> pi+ pi+ pi-";
-    PtoPPM._z      = {gam,   g,  h,  k};
-    PtoPPM._dz     = {dgam, dg, dh, dk};
-    PtoPPM._N      = 4;
-    PtoPPM._option = option::P_ppm;
-    PtoPPM._type   = kaon::fit::kAll;
+    data_set dPtoPPM;
+    dPtoPPM._id     = "K+ -> pi+ pi+ pi-";
+    dPtoPPM._z      = {cg,  ch,  ck};
+    dPtoPPM._dz     = {cdg, cdh, cdk};
+    dPtoPPM._N      = 3;
+    dPtoPPM._option = option::P_ppm;
+    dPtoPPM._type   = kaon::fit::kDalitz;
 
     // K+ -> pi0 pi0 pi+ dalitz parameters
-    g   =  0.626,  dg   = 7E-3;
-    h   =  0.052,  dh   = 8E-3;
-    k   =  0.0054, dk   = 35E-4;
+    double ngam, ndgam, ng, ndg, nh, ndh, nk, ndk;
+    ng   =  0.626,  ndg   = 70E-4;
+    nh   =  0.052,  ndh   = 80E-4;
+    nk   =  0.0054, ndk   = 35E-4;
 
-    data_set PtoZZP;
-    PtoZZP._id     = "K+ -> pi0 pi0 pi+";
-    PtoZZP._z      = { g,  h,  k};
-    PtoZZP._dz     = {dg, dh, dk};
-    PtoZZP._N      = 3;
-    PtoZZP._option = option::P_zzp;
-    PtoZZP._type   = kaon::fit::kDalitz;
+    data_set dPtoZZP;
+    dPtoZZP._id     = "K+ -> pi0 pi0 pi+";
+    dPtoZZP._z      = { ng,  nh,  nk};
+    dPtoZZP._dz     = {ndg, ndh, ndk};
+    dPtoZZP._N      = 3;
+    dPtoZZP._option = option::P_zzp;
+    dPtoZZP._type   = kaon::fit::kDalitz;
     
     // -----------------------------------------------------------------------
     // Set up fitter
 
-    // std::vector<iterateKT::complex> pars=  {1210.2084, -5965.0633, -1071.8057, 9163.4163};
-    // auto ppars = kaon::fit::process_fitter_parameters(pars, amp);
-    // amp->set_parameters(ppars);
-    // amp->set_option(option::P_ppm);
-    // // auto dpars = amp->get_dalitz_parameters(1E-6);
-    // // print("Width =", amp->width());
-    // // print("g =", dpars[0]);
-    // // print("h =", dpars[1]);
-    // // print("k =", dpars[3]);
-    // print(ppars);
-    // // amp->set_option(option::P_zzp);
-    // // dpars = amp->get_dalitz_parameters(1E-3);
-    // // print("Width =", amp->width());
-    // // print(dpars[0], dpars[1], dpars[3]);
-    // exit(1);
-
     fitter<kaon::fit> fitter(amp);
+    fitter.set_print_level(0);
+    fitter.set_strategy(3);
 
-    fitter.set_print_level(1);
-    
     // Add data from above
-    fitter.add_data(PtoPPM);
-    // fitter.add_data(PtoZZP);
+    // fitter.add_data(wPtoPPM);
+    // fitter.add_data(dPtoPPM);
+    fitter.add_data(dPtoZZP);
 
     // Set up parameters (all real)
     std::vector<std::string> labels = {"alpha", "beta", "gamma", "zeta"};
     fitter.set_parameter_labels(labels);
     for (auto par : labels) fitter.make_real(par);
+    fitter.fix_parameter("zeta", 1);
+    fitter.fix_parameter("alpha", -0.361340721);
 
-    std::vector<iterateKT::complex> initial_guess = {1537.7541, -8764.3614, 264.82228, 9930.3531};
-    fitter.do_fit(initial_guess);
+    TRandom * guesser = new TRandom(0);
+    double best_chi2 = -1; int status;
+    std::vector<iterateKT::complex> best_pars;
+    for (int n = 0; n < N; n++)
+    {
+        std::vector<iterateKT::complex> initial_guess;
+        for (int i = 0; i < 2; i++) initial_guess.push_back(guesser->Uniform(-1, 1));
+        fitter.do_fit(initial_guess);
+        if (best_chi2 == -1 || fitter.fcn() <= best_chi2)
+        {
+            status    = fitter.status();
+            best_chi2 = fitter.fcn();
+            best_pars = fitter.pars();
+        };
+    };
+
+    auto processed_pars = kaon::fit::process_fitter_parameters(best_pars, amp);
+    amp->set_parameters(processed_pars);
+    line();
+    divider<20>(2);
+    print("Status ", status);
+    print("Best chi2 ", best_chi2);
+    divider<20>(2);
+    print<15,20>("alpha", processed_pars[0]);
+    print<15,20>("beta",  processed_pars[1]);
+    print<15,20>("gamma", processed_pars[2]);
+    print<15,20>("zeta",  processed_pars[3]);
+    divider<20>(2);
+    line();
+        
+    amp->set_option(option::P_ppm);
+    double cwidth = amp->width();
+    auto   cdpars = amp->get_dalitz_parameters(kaon::fit::derivative_h);
+    divider<20>(4); 
+    print<15,20>("", "Fit value", "Exp. value", "chi2");
+    divider<20>(4); centered<20>(4, "K+ -> pi+ pi+ pi-"); divider<20>(4);
+    print<15,20>("g",     cdpars[0], cg,   norm((cdpars[0]-cg)/cdg));
+    print<15,20>("h",     cdpars[1], ch,   norm((cdpars[1]-ch)/cdh));
+    print<15,20>("k",     cdpars[3], ck,   norm((cdpars[3]-ck)/cdk));
+    
+    amp->set_option(option::P_zzp);
+    double nwidth = amp->width();
+    auto   ndpars = amp->get_dalitz_parameters(kaon::fit::derivative_h);
+    divider<20>(4); centered<20>(4, "K+ -> pi0 pi0 pi+"); divider<20>(4);
+    print<15,20>("g",     ndpars[0], ng,   norm((ndpars[0]-ng)/ndg));
+    print<15,20>("h",     ndpars[1], nh,   norm((ndpars[1]-nh)/ndh));
+    print<15,20>("k",     ndpars[3], nk,   norm((ndpars[3]-nk)/ndk));
+    divider<20>(4); line();
+
+    // ----------------------------------------
+    // Status         0
+    // Best chi2      2.50043521e-15
+    // ----------------------------------------
+    // alpha          (-0.361340721,0.000689053181)
+    // beta           (1.38506266,-0.0174485065)
+    // gamma          (0.470846129,0.0142710675)
+    // zeta           (1,0)
+    // ----------------------------------------
 };

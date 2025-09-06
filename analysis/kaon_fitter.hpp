@@ -21,6 +21,11 @@ namespace iterateKT { namespace kaon
         // Static identifiers for data_set types
         static const int kAll = 0, kWidth = 1, kDalitz = 2;
 
+        // The offset we use for the derivatives of dpars
+        // with 4-point quadrature its recommended to use 1E-3*s0
+        // where s0 is the expansion point kinematics::s0() ~ 0.1
+        static constexpr double derivative_h = 1E-4;
+
         // String letting us know what is being fit
         static std::string data_type(int i)
         {
@@ -29,7 +34,7 @@ namespace iterateKT { namespace kaon
                 case kAll:     return "Width & {g, h, k}";
                 case kWidth:   return "Width";
                 case kDalitz:  return "{g, h, k}";
-                default: return "ERROR!";
+                default:       return "ERROR!";
             };
         };
 
@@ -45,38 +50,24 @@ namespace iterateKT { namespace kaon
         static double chi2(const data_set & data, amplitude to_fit)
         {
             int type = data._type;
+            bool n = (data._type == kAll); // Whether to skip the first slot (width) in the data
             to_fit->set_option(data._option);
 
             double chi2 = 0;
-
             // χ² from Γ        
-            if (type == kAll || type == kWidth)   chi2 += chi2_width(data, to_fit); 
-
+            if (type == kAll || type == kWidth)
+            {
+                double gam_th = to_fit->width();
+                double gam_ex = data._z[0], dgam_ex = data._dz[0];
+                chi2 += norm((gam_th - gam_ex)/dgam_ex);
+            };
             // χ² from g h k
-            std::array<double,3> chi2_ghk = {0,0,0};
-            if (type == kAll || type == kDalitz) chi2_ghk = chi2_dpars(data, to_fit);
-            for (auto chi2_i : chi2_ghk) chi2 += chi2_i;
-
-            return chi2;
-        };
-
-        // Compare widths
-        static double chi2_width(const data_set & data, amplitude to_fit)
-        {
-            double gam_th = to_fit->width();
-            double gam_ex = data._z[0], dgam_ex = data._dz[0];
-            return norm((gam_th - gam_ex)/dgam_ex);
-        };
-
-        // Compare g, h, k
-        static std::array<double,3> chi2_dpars(const data_set & data, amplitude to_fit)
-        {
-            double mp2  = M_PION_PM*M_PION_PM;
-            auto dpars  = to_fit->get_dalitz_parameters(1E-6, {mp2, mp2});
-
-            bool n = (data._type == kAll); 
-            std::array<double,3> chi2, ghk = {dpars[0], dpars[1], dpars[3]};
-            for (int i = 0; i < 3; i++) chi2[i] = norm((ghk[i]-data._z[i+n])/data._dz[i+n]);
+            if (type == kAll || type == kDalitz)
+            {
+                auto dpars  = to_fit->get_dalitz_parameters(derivative_h, {M_PION_PM*M_PION_PM, M_PION_PM*M_PION_PM});
+                std::array<double,3> ghk = {dpars[0], dpars[1], dpars[3]};
+                for (int i = 0; i < 3; i++) chi2 += norm((ghk[i]-data._z[i+n])/data._dz[i+n]);
+            };
             return chi2;
         };
 
@@ -113,19 +104,25 @@ namespace iterateKT { namespace kaon
             for (uint n = 0; n < 3; n++)
             {
                 std::array<complex,4> T;
-                T[0] =   A[0][n] + 4./3*A[2][n] - 3*r*A[1][n] + 3*r*B[2][n] +9*r*r*C[2][n];
-                T[1] =   B[0][n] - 5./3*B[2][n] + 3  *A[1][n] - 9*r*C[2][n];
-                T[2] =   B[1][n] +      C[2][n];
+                T[0] =   A[0][n] + r*B[0][n] + 4*(A[2][n]+r*B[2][n])/3;
+                T[1] = 3*A[1][n] +   B[0][n] - 5*B[2][n]/3 + 9*r*(B[1][n] + 2*r*C[1][n]);
+                T[2] =   C[2][n] +   B[1][n] + 3*r*C[1][n];
+                // T[2] = 3*C[0][n] + 4*C[2][n];
+
+                // T[0] =   A[0][n] + 4./3*A[2][n] - 3*r*A[1][n] + 3*r*B[2][n] +9*r*r*C[2][n];
+                // T[1] =   B[0][n] - 5./3*B[2][n] + 3  *A[1][n] - 9*r*C[2][n];
+                // T[2] =   B[1][n] +      C[2][n];
+                // T[2] =   C[0][n] + 4./3*C[2][n];
                
                 for (int j = 0; j < 3; j++)
                 {
-                    reT_data[3*j+n] = real(T[j]);  imT_data[3*j+n] = imag(T[j]);
+                    reT_data[3*j+n] = -real(T[j]);  imT_data[3*j+n] = imag(T[j]);
                 };
             };
             TMatrixD reT(3,3,reT_data.GetArray()), imT(3,3,imT_data.GetArray());
 
             // Now we actually solve the matrix equation relating reMu and imMu
-            TMatrixD M = reT.Invert()*imT; M *= -1;
+            TMatrixD M = reT.Invert()*imT;
 
             Double_t rePars_data[3];
             for (int i = 0; i < 3; i++) rePars_data[i] = real(in_pars[i]);

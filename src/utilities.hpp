@@ -322,10 +322,11 @@ namespace iterateKT
     };
 
     // Print a string centered on the terminal 
+    template<uint N=PRINT_SPACING>
     inline void centered(int n, std::string words)
     {
         int x = words.length();
-        int gap_width = (n * PRINT_SPACING - x)/2;
+        int gap_width = (n * N - x)/2;
         std::cout << std::left << std::setw(gap_width) << "" << std::setw(x) << words << std::setw(gap_width) << "" << std::endl;
     };
 
