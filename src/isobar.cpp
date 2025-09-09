@@ -210,9 +210,6 @@ namespace iterateKT
     // Filter which region of the pinnochio we are evalutating at and call the appropriate function
     complex raw_isobar::pinocchio_integral(unsigned int basis_id, double s, std::vector<isobar> & previous)
     {
-        if (s < _kinematics->A()) return error("isobar::angular_integral", 
-                                               "Trying to evaluate angular integral below threshold!", NaN<complex>());
-        
         int region = (s > _kinematics->B()) + (s > _kinematics->C()) + (s > _kinematics->D());
         switch (region)
         {
