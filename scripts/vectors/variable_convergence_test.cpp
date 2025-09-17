@@ -41,8 +41,6 @@ void variable_convergence_test()
 
     int nmax = 8;
     settings sets = default_settings();
-    sets._iteration_rate_intercept = 0.3;
-    sets._iteration_rate_slope      = (1-sets._iteration_rate_intercept)/nmax;
 
     // We need to load our amplitude with our isobars 
     // Up to two subtractions so we have two basis functions

@@ -186,22 +186,35 @@ namespace iterateKT
         output._s_list        = _s_list;
         output._s_around_pth  = _s_around_pth;
         
-        double x = _settings._iteration_rate_intercept + _iterations.size()*_settings._iteration_rate_slope;
-        if (x >= 1) x = 1.0;
-
         // Sum over basis functions
         for (int i = 0; i < _subtractions->N_basis(); i++)
         {
-            std::vector<double> re, im;
+            double weight = 0.;
+            int   skipped = 0;
+            std::vector<complex> old_disc, new_disc;
             for (auto s : _s_list)
             {
-                complex new_disc = LHC(s)/pow(s,_max_sub)*pinocchio_integral(i,s,previous);
-                complex old_disc = (are_equal(x, 1.0)) ? 0. : _iterations.back()->ksf_inhomogeneity(i, s);
-                re.push_back( real((1-x)*old_disc + x*new_disc) );
-                im.push_back( imag((1-x)*old_disc + x*new_disc) );
+                complex new_i = LHC(s)/pow(s,_max_sub)*pinocchio_integral(i,s,previous);
+                complex old_i = _iterations.back()->ksf_inhomogeneity(i, s);
+
+                new_disc.push_back(new_i);
+                old_disc.push_back(old_i);
+
+                if (is_zero(new_i)){ skipped++; continue; };
+                weight += sqrt(norm((new_i-old_i))/norm(new_i));
             };
-            output._re_list.push_back(re);
-            output._im_list.push_back(im);
+            weight /= _s_list.size() - skipped;
+
+            std::vector<double> re_next, im_next;
+            for (int n = 0; n < _s_list.size(); n++)
+            {
+                complex next = old_disc[n] + weight*(new_disc[n]-old_disc[n]);
+                re_next.push_back( real(next) );
+                im_next.push_back( imag(next) );
+            };
+            
+            output._re_list.push_back( re_next );
+            output._im_list.push_back( im_next );
         };
 
         return output;
