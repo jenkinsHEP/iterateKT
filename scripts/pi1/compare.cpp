@@ -89,9 +89,9 @@ void compare()
 
     p1.add_curve({smin, smax}, [&](double s){ return real(omnes_norm*pwave1->omnes(s+IEPS) - omnes_norm*pwave1->omnes(0))/1E3; }, solid( jpacColor::Blue, "Omnes"));
     p1.add_curve({smin, smax}, [&](double s){ return imag(omnes_norm*pwave1->omnes(s+IEPS) - omnes_norm*pwave1->omnes(0))/1E3; }, dashed(jpacColor::Blue));
-    p1.add_curve({smin, smax}, [&](double s){ return real(pwave1->evaluate(s+IEPS) - pwave1->evaluate(0))/1E3; },                 solid( jpacColor::Red,  "Unsubtracted"));
+    p1.add_curve({smin, smax}, [&](double s){ return real(pwave1->evaluate(s+IEPS) - pwave1->evaluate(0))/1E3; },                 solid( jpacColor::Red,  "Once-subtracted"));
     p1.add_curve({smin, smax}, [&](double s){ return imag(pwave1->evaluate(s+IEPS) - pwave1->evaluate(0))/1E3; },                 dashed(jpacColor::Red));
-    p1.add_curve({smin, smax}, [&](double s){ return real(pwave2->evaluate(s+IEPS) - pwave2->evaluate(0))/1E3; },                 solid( jpacColor::Green,"Once-subtracted"));
+    p1.add_curve({smin, smax}, [&](double s){ return real(pwave2->evaluate(s+IEPS) - pwave2->evaluate(0))/1E3; },                 solid( jpacColor::Green,"Twice-subtracted"));
     p1.add_curve({smin, smax}, [&](double s){ return imag(pwave2->evaluate(s+IEPS) - pwave2->evaluate(0))/1E3; },                 dashed(jpacColor::Green));
     p1.shade_region({kin->sth(), kin->pth()});
 
@@ -102,8 +102,8 @@ void compare()
     p2.set_labels("#sigma  [GeV^{2}]", "| #it{F}(#sigma + #it{i}#epsilon) #minus #it{F}(0) | / 10^{3}");
     
     p2.add_curve({smin, smax}, [&](double s){ return abs(omnes_norm*pwave1->omnes(s+IEPS) - omnes_norm*pwave1->omnes(0))/1E3; }, solid(jpacColor::Blue, "Omnes"));
-    p2.add_curve({smin, smax}, [&](double s){ return abs(pwave1->evaluate(s+IEPS) - pwave1->evaluate(0))/1E3; },                 solid(jpacColor::Red,  "Unsubtracted"));
-    p2.add_curve({smin, smax}, [&](double s){ return abs(pwave2->evaluate(s+IEPS) - pwave2->evaluate(0))/1E3; },                 solid(jpacColor::Green,"Once-subtracted"));
+    p2.add_curve({smin, smax}, [&](double s){ return abs(pwave1->evaluate(s+IEPS) - pwave1->evaluate(0))/1E3; },                 solid(jpacColor::Red,  "Once-subtracted"));
+    p2.add_curve({smin, smax}, [&](double s){ return abs(pwave2->evaluate(s+IEPS) - pwave2->evaluate(0))/1E3; },                 solid(jpacColor::Green,"Twice-subtracted"));
     p2.shade_region({kin->sth(), kin->pth()});
 
     p1.save("reim_compare.pdf");
