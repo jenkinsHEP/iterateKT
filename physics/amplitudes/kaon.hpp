@@ -34,11 +34,12 @@ namespace iterateKT
     inline settings default_settings()
     {
         settings sets;
+        sets._derivative_h            = 1E-6;
         sets._exclusion_points        = 20;
         sets._exclusion_offsets       = {3.E-2, 5E-2};
         sets._infinitesimal           = 1E-8;
         sets._intermediate_energy     = 1.0;
-        sets._cutoff                  = 20.0;
+        sets._cutoff                  = 10.0;
         sets._interpolation_offset    = 1E-4;
         sets._interpolation_points    = {400, 10, 100};
 
@@ -51,6 +52,11 @@ namespace iterateKT
         phase_args iso_0 = {"madrid/delta_00.dat", 1.69,  1, 1, 2};
         phase_args iso_1 = {"madrid/delta_11.dat", 1.69,  1, 1, 2};
         phase_args iso_2 = {"madrid/delta_02.dat", 9.99,  0, 1, 2};
+
+        // phase_args iso_0 = {"orsay/phase00.dat", 9.99,  1, 1, 2};
+        // phase_args iso_1 = {"orsay/phase11.dat", 9.99,  1, 1, 2};
+        // phase_args iso_2 = {"orsay/phase02.dat", 9.99,  0, 1, 2};
+        
         sets._phase_shifts = { {id::I0_P1, iso_1}, 
                                {id::I1_S0, iso_0}, {id::I1_P1, iso_1}, {id::I1_S2, iso_2},
                                {id::I2_P1, iso_1}, {id::I2_S2, iso_2}};
@@ -106,7 +112,7 @@ namespace iterateKT
         {
             switch (iso_id)
             {
-                case id::I2_P1: return 3*(s-u)/2;
+                case id::I2_P1: return -3*(s-u)/2;
                 case id::I2_S2: return -1./2;
                 default: return 0;
             };
@@ -142,7 +148,7 @@ namespace iterateKT
         {
             complex Fs = (_charged) ? _F->prefactor_s(iso_id, t, s, u) + _F->prefactor_s(iso_id, u, t, s) 
                                     : _F->prefactor_s(iso_id, s, t, u);
-            return Fs + _H->prefactor_s(iso_id, s, t, u);
+            return Fs +_H->prefactor_s(iso_id, s, t, u);
         };
 
         inline complex prefactor_t(id iso_id, complex s, complex t, complex u)
@@ -154,9 +160,7 @@ namespace iterateKT
 
         inline complex prefactor_u(id iso_id, complex s, complex t, complex u)
         {
-            complex Fu = (_charged) ? _F->prefactor_u(iso_id, t, s, u) + _F->prefactor_u(iso_id, u, t, s) 
-                                    : _F->prefactor_u(iso_id, s, t, u);
-            return Fu + _H->prefactor_u(iso_id, s, t, u);
+            return prefactor_t(iso_id, s, u, t);
         };
 
         // Two identical particles

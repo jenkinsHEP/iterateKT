@@ -123,7 +123,7 @@ namespace iterateKT
             switch (iso_id)
             {
                 case id::I2_P1: return 9./2*kz*(s-r+kz/3);
-                case id::I2_S2: return 3*kz;
+                case id::I2_S2: return -3*kz;
                 default:         return 0;
             };
         };
@@ -140,7 +140,7 @@ namespace iterateKT
             double  r  = _kinematics->r(); complex kz = _kinematics->kz(s,t);
             switch (iso_id)
             {
-                case id::I2_P1: return 9./2*(s-r+kz/3);
+                case id::I2_P1: return -9./2*(s-r+kz/3);
                 case id::I2_S2: return -1;
                 default:         return 0;
             };

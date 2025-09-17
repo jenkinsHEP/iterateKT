@@ -33,16 +33,16 @@ void fit()
     // Add all the isobars, note the order they are added will be the order
     // the basis functions are generated
     std::vector<uint> empty = {}; // Pass empty to isobars with no sub polynomials
-    isobar F0 = amp->add_isobar<I1_S0>(2,        id::I1_S0, "F0"); 
-    isobar F1 = amp->add_isobar<I1_P1>(1,        id::I1_P1, "F1"); 
-    isobar F2 = amp->add_isobar<I1_S2>(empty, 1, id::I1_S2, "F2");
-    isobar H1 = amp->add_isobar<I2_P1>(1,        id::I2_P1, "H1"); 
-    isobar H2 = amp->add_isobar<I2_S2>(empty, 1, id::I2_S2, "H2");
+    isobar F0 = amp->add_isobar<I1_S0>({0, 1, 2}, 2,       id::I1_S0, "F0"); 
+    isobar F1 = amp->add_isobar<I1_P1>({1},   1, id::I1_P1, "F1"); 
+    isobar F2 = amp->add_isobar<I1_S2>(empty, 2, id::I1_S2, "F2");
+    isobar H1 = amp->add_isobar<I2_P1>({0, 1},1, id::I2_P1, "H1"); 
+    isobar H2 = amp->add_isobar<I2_S2>(empty, 2, id::I2_S2, "H2");
 
     // Path to precalculated isobar files
     std::string path   = "/scripts/kaon/basis_functions/basis_";
     // Import everything 
-    for (auto iso : amp->get_isobars()) iso->import_iteration<11>(path+iso->name()+".dat");
+    for (auto iso : amp->get_isobars()) iso->import_iteration<6>(path+iso->name()+".dat");
 
     // -----------------------------------------------------------------------
     // Set up data
@@ -94,15 +94,14 @@ void fit()
 
     // Add data from above
     // fitter.add_data(wPtoPPM);
-    // fitter.add_data(dPtoPPM);
+    fitter.add_data(dPtoPPM);
     fitter.add_data(dPtoZZP);
 
     // Set up parameters (all real)
-    std::vector<std::string> labels = {"alpha", "beta", "gamma", "zeta"};
+    std::vector<std::string> labels = {"alpha", "beta", "gamma", "zeta", "mu", "nu"};
     fitter.set_parameter_labels(labels);
     for (auto par : labels) fitter.make_real(par);
-    fitter.fix_parameter("zeta", 1);
-    fitter.fix_parameter("alpha", -0.361340721);
+    fitter.fix_parameter("mu", 1);
 
     TRandom * guesser = new TRandom(0);
     double best_chi2 = -1; int status;
@@ -110,7 +109,7 @@ void fit()
     for (int n = 0; n < N; n++)
     {
         std::vector<iterateKT::complex> initial_guess;
-        for (int i = 0; i < 2; i++) initial_guess.push_back(guesser->Uniform(-1, 1));
+        for (int i = 0; i < 5; i++) initial_guess.push_back(guesser->Uniform(-10, 10));
         fitter.do_fit(initial_guess);
         if (best_chi2 == -1 || fitter.fcn() <= best_chi2)
         {
@@ -131,11 +130,12 @@ void fit()
     print<15,20>("beta",  processed_pars[1]);
     print<15,20>("gamma", processed_pars[2]);
     print<15,20>("zeta",  processed_pars[3]);
+    print<15,20>("mu",    processed_pars[4]);
+    print<15,20>("nu",    processed_pars[5]);
     divider<20>(2);
     line();
         
     amp->set_option(option::P_ppm);
-    double cwidth = amp->width();
     auto   cdpars = amp->get_dalitz_parameters(kaon::fit::derivative_h);
     divider<20>(4); 
     print<15,20>("", "Fit value", "Exp. value", "chi2");
@@ -145,21 +145,10 @@ void fit()
     print<15,20>("k",     cdpars[3], ck,   norm((cdpars[3]-ck)/cdk));
     
     amp->set_option(option::P_zzp);
-    double nwidth = amp->width();
     auto   ndpars = amp->get_dalitz_parameters(kaon::fit::derivative_h);
     divider<20>(4); centered<20>(4, "K+ -> pi0 pi0 pi+"); divider<20>(4);
     print<15,20>("g",     ndpars[0], ng,   norm((ndpars[0]-ng)/ndg));
     print<15,20>("h",     ndpars[1], nh,   norm((ndpars[1]-nh)/ndh));
     print<15,20>("k",     ndpars[3], nk,   norm((ndpars[3]-nk)/ndk));
     divider<20>(4); line();
-
-    // ----------------------------------------
-    // Status         0
-    // Best chi2      2.50043521e-15
-    // ----------------------------------------
-    // alpha          (-0.361340721,0.000689053181)
-    // beta           (1.38506266,-0.0174485065)
-    // gamma          (0.470846129,0.0142710675)
-    // zeta           (1,0)
-    // ----------------------------------------
 };
