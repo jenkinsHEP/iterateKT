@@ -189,26 +189,32 @@ namespace iterateKT
         // Sum over basis functions
         for (int i = 0; i < _subtractions->N_basis(); i++)
         {
-            double weight = 0.;
+            complex den = 0., num = 0.;
             int   skipped = 0;
             std::vector<complex> old_disc, new_disc;
-            for (auto s : _s_list)
+            for (int j = 0; j < _s_list.size(); j++)
             {
-                complex new_i = LHC(s)/pow(s,_max_sub)*pinocchio_integral(i,s,previous);
-                complex old_i = _iterations.back()->ksf_inhomogeneity(i, s);
+                double s = _s_list[j];
+                complex new_j = LHC(s)/pow(s,_max_sub)*pinocchio_integral(i,s,previous);
+                complex old_j = _iterations.back()->ksf_inhomogeneity(i, s);
 
-                new_disc.push_back(new_i);
-                old_disc.push_back(old_i);
+                new_disc.push_back(new_j);
+                old_disc.push_back(old_j);
 
-                if (is_zero(new_i)){ skipped++; continue; };
-                weight += sqrt(norm((new_i-old_i))/norm(new_i));
+                if (j == 0) continue;
+
+                // Calculate reimann sums
+                num += conj(new_j)*old_j * (_s_list[j] - _s_list[j-1]);
+                den += norm(new_j)       * (_s_list[j] - _s_list[j-1]);
             };
-            weight /= _s_list.size() - skipped;
+            complex weight = num / den;
+            if (is_zero(weight)) weight = 0.1;
 
+            // print(weight);
             std::vector<double> re_next, im_next;
-            for (int n = 0; n < _s_list.size(); n++)
+            for (int k = 0; k < _s_list.size(); k++)
             {
-                complex next = old_disc[n] + weight*(new_disc[n]-old_disc[n]);
+                complex next = old_disc[k]-abs(weight)*(old_disc[k]-new_disc[k]);
                 re_next.push_back( real(next) );
                 im_next.push_back( imag(next) );
             };
