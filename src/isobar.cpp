@@ -186,41 +186,23 @@ namespace iterateKT
         output._s_list        = _s_list;
         output._s_around_pth  = _s_around_pth;
         
+        double x = _settings._iteration_rate_intercept + _iterations.size()*_settings._iteration_rate_slope;
+        if (x >= 1) x = 1;
+
         // Sum over basis functions
         for (int i = 0; i < _subtractions->N_basis(); i++)
         {
-            complex den = 0., num = 0.;
-            int   skipped = 0;
-            std::vector<complex> old_disc, new_disc;
-            for (int j = 0; j < _s_list.size(); j++)
+            std::vector<double> re, im;
+            for (auto s : _s_list)
             {
-                double s = _s_list[j];
-                complex new_j = LHC(s)/pow(s,_max_sub)*pinocchio_integral(i,s,previous);
-                complex old_j = _iterations.back()->ksf_inhomogeneity(i, s);
-
-                new_disc.push_back(new_j);
-                old_disc.push_back(old_j);
-
-                if (j == 0) continue;
-
-                // Calculate reimann sums
-                num += conj(new_j)*old_j * (_s_list[j] - _s_list[j-1]);
-                den += norm(new_j)       * (_s_list[j] - _s_list[j-1]);
+                complex new_disc = LHC(s)/pow(s,_max_sub)*pinocchio_integral(i,s,previous);
+                complex old_disc = _iterations.back()->ksf_inhomogeneity(i, s);
+                complex weighted = x*new_disc - (1-x)*old_disc;
+                re.push_back( real(weighted) );
+                im.push_back( imag(weighted) );
             };
-            complex weight = num / den;
-            if (is_zero(weight)) weight = 0.1;
-
-            // print(weight);
-            std::vector<double> re_next, im_next;
-            for (int k = 0; k < _s_list.size(); k++)
-            {
-                complex next = old_disc[k]-abs(weight)*(old_disc[k]-new_disc[k]);
-                re_next.push_back( real(next) );
-                im_next.push_back( imag(next) );
-            };
-            
-            output._re_list.push_back( re_next );
-            output._im_list.push_back( im_next );
+            output._re_list.push_back(re);
+            output._im_list.push_back(im);
         };
 
         return output;
