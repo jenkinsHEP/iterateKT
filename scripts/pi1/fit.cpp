@@ -1,13 +1,13 @@
-// Fit KT amplitudes for π1(1600) decay with only P-wave in [1]
+// Fit KT amplitudes for π1(1600) decay with only P-wave to data from [1]
 //
 // ------------------------------------------------------------------------------
-// Author:       Daniel Winney (2024)
+// Author:       Daniel Winney (2025)
 // Affiliation:  Universitat Bonn
 //               Helmholtz Institute (HISKP)
 // Email:        daniel.winney@gmail.com
 // ------------------------------------------------------------------------------
 // REFERENCES: 
-// [1] - https://arxiv.org/abs/2212.11767
+// [1] - https://inspirehep.net/literature/1898933
 // ------------------------------------------------------------------------------
 
 #include <algorithm>
@@ -24,7 +24,7 @@
 #include "COMPASS_pi1/fitter.hpp"
 #include "COMPASS_pi1/data.hpp"
 
-void polynomial_fit()
+void fit()
 {
     using namespace iterateKT;
     using iterateKT::complex;
@@ -32,25 +32,36 @@ void polynomial_fit()
     // -----------------------------------------------------------------------
     // Operating options
 
-    int bin_number = 22;  // which m3pi bin to fit
-    int Niter      = 5;   // Number of KT iterations
-    int Nsub       = 2;   // Number of subtractions
+    int m3pibin    = 22;  // which m3pi bin to fit
+    int tbin       = 2;   // which t bin to fit
+    int Niter      = 10;  // Number of KT iterations
+
+    // If we're using deck model or not
+    bool deck      = 1;
 
     // -----------------------------------------------------------------------
     // Set up amplitude and iterative solution
 
     // Import our data set first so we can know the m3pi bin
-    data_set data   = COMPASS::parse_JSON("dalitz_m3pi_bin_number_"+to_string(bin_number)+"_tBin_3.json");
+    std::string filename = "tBin_"+to_string(tbin)+"/dalitz_m3piBin_"+to_string(m3pibin)+"_tBin_"+to_string(tbin)+".json";
+    data_set data   = COMPASS::parse_JSON(filename);
     double m3pi     = data._extras["m3pi"];
+    double t        = data._extras["t"];
 
     // Set up general kinematics so everything knows masses
     kinematics kin = new_kinematics(m3pi, M_PION);
     
     // Set up our amplitude 
-    amplitude amp = new_amplitude<pi1>(kin, "π₁ → 3π");
+    amplitude amp  = new_amplitude<pi1>(kin, "π₁ → 3π");
 
-    // We only have one isobar, which we import here
-    amp->add_isobar<P_wave>(Nsub, id::P_wave);
+    // Contact piece gets just constant as driving term
+    auto   constant = [&](complex sigma){return 1.;};
+    auto   linear   = [&](complex sigma){return sigma;};
+    auto   Delta    = [&](complex sigma){return pi1::deck(t, m3pi*m3pi, sigma);};
+
+    // Add isobar using the above function as our driving term
+    isobar pwave   = (deck) ? amp->add_isobar<P_wave>({constant, Delta}, 3, id::P_wave,  "Deck")
+                            : amp->add_isobar<P_wave>({constant, linear}, 3, id::P_wave, "Twice-subtracted");
 
     // Iterate Niter times
     amp->timed_iterate(Niter);
@@ -59,17 +70,17 @@ void polynomial_fit()
     // Set up fitter
 
     // These vectors should be same size as Nsub above
-    std::vector<std::string> all_labels = {"alpha", "beta", "gamma"};
-    std::vector<std::string> par_labels(all_labels.begin(), all_labels.begin() + Nsub);
-    std::vector<complex> initial_guess(Nsub, 1.0);
+    std::vector<std::string> par_labels = {"alpha"};
+    if (deck) par_labels.push_back("delta");
+    else      par_labels.push_back("beta");
+    std::vector<complex> initial_guess  = {1., 1.};
 
     // Add data
     fitter<COMPASS::fit> fitter(amp);
     fitter.add_data(data);
     
     fitter.set_parameter_labels(par_labels);
-    fitter.make_real("alpha"); // Fix overall phase 
-
+    fitter.make_real("alpha"); 
     fitter.do_fit(initial_guess);
 
     // -----------------------------------------------------------------------
@@ -99,8 +110,8 @@ void polynomial_fit()
     double max_pull = *std::max_element(pull.begin(), pull.end());
 
     plot2D p2 = kin->new_dalitz_plot(plotter);
-    p2.set_palette(kTemperatureMap);
     p2.set_Nbins(data._extras["Nbins"]);
+    p2.set_palette(kTemperatureMap);
     p2.set_data({data._x, data._y, pull});
     p2.set_labels(xlabel, ylabel);
     p2.set_ranges(bounds, bounds, {-max_pull, max_pull});
