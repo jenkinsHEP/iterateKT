@@ -74,6 +74,7 @@ namespace iterateKT { namespace COMPASS
                 s1 *= s1; s2 *= s2; // mass squared
     
                 if (!kin->in_decay_region(s1, s2)) continue;
+                if (are_equal(s1, s2))             continue;
                 
                 sig1.push_back(s1); sig2.push_back(s2);
                 absM.push_back(     abs_M[i][j] ); 

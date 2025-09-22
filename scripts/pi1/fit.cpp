@@ -37,7 +37,8 @@ void fit()
     int Niter      = 10;  // Number of KT iterations
 
     // If we're using deck model or not
-    bool deck      = 1;
+    bool deck      = true;
+    bool omega     = false;
 
     // -----------------------------------------------------------------------
     // Set up amplitude and iterative solution
@@ -57,11 +58,15 @@ void fit()
     // Contact piece gets just constant as driving term
     auto   constant = [&](complex sigma){return 1.;};
     auto   linear   = [&](complex sigma){return sigma;};
+    auto   bw_omega = [&](complex sigma){return sigma/(sigma-norm(M_OMEGA)+I*M_OMEGA*8.68E-3); };
     auto   Delta    = [&](complex sigma){return pi1::deck(t, m3pi*m3pi, sigma);};
 
+    std::vector<std::function<complex(complex)>> driving_terms = {constant};
+    if (omega) driving_terms.push_back(bw_omega);
+    if (deck)  driving_terms.push_back(Delta);
+    else       driving_terms.push_back(linear);
     // Add isobar using the above function as our driving term
-    isobar pwave   = (deck) ? amp->add_isobar<P_wave>({constant, Delta}, 3, id::P_wave,  "Deck")
-                            : amp->add_isobar<P_wave>({constant, linear}, 3, id::P_wave, "Twice-subtracted");
+    isobar pwave   =  amp->add_isobar<P_wave>(driving_terms,  3, id::P_wave, "Deck");
 
     // Iterate Niter times
     amp->timed_iterate(Niter);
@@ -71,9 +76,10 @@ void fit()
 
     // These vectors should be same size as Nsub above
     std::vector<std::string> par_labels = {"alpha"};
-    if (deck) par_labels.push_back("delta");
-    else      par_labels.push_back("beta");
     std::vector<complex> initial_guess  = {1., 1.};
+    if (omega) { par_labels.push_back("omega"); initial_guess.push_back(1.); };
+    if (deck)    par_labels.push_back("delta");
+    else         par_labels.push_back("beta");
 
     // Add data
     fitter<COMPASS::fit> fitter(amp);
