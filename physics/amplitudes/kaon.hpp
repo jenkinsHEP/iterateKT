@@ -52,11 +52,7 @@ namespace iterateKT
         phase_args iso_0 = {"madrid/delta_00.dat", 1.69,  1, 1, 2};
         phase_args iso_1 = {"madrid/delta_11.dat", 1.69,  1, 1, 2};
         phase_args iso_2 = {"madrid/delta_02.dat", 9.99,  0, 1, 2};
-
-        // phase_args iso_0 = {"orsay/phase00.dat", 9.99,  1, 1, 2};
-        // phase_args iso_1 = {"orsay/phase11.dat", 9.99,  1, 1, 2};
-        // phase_args iso_2 = {"orsay/phase02.dat", 9.99,  0, 1, 2};
-        
+                
         sets._phase_shifts = { {id::I0_P1, iso_1}, 
                                {id::I1_S0, iso_0}, {id::I1_P1, iso_1}, {id::I1_S2, iso_2},
                                {id::I2_P1, iso_1}, {id::I2_S2, iso_2}};
@@ -142,25 +138,34 @@ namespace iterateKT
         inline void set_option(option opt){ _charged = (opt == option::P_ppm); };
 
         // P_ppm(s,t,u) = F(t,s,u) + F(u,t,s) + H(s,t,u)
-        // P_zzp(s,t,u) = F(s,t,u) + H(s,t,u)
+        // P_zzp(s,t,u) = F(s,t,u)            + H(s,t,u)
 
         inline complex prefactor_s(id iso_id, complex s, complex t, complex u)
         {
-            complex Fs = (_charged) ? _F->prefactor_s(iso_id, t, s, u) + _F->prefactor_s(iso_id, u, t, s) 
-                                    : _F->prefactor_s(iso_id, s, t, u);
-            return Fs +_H->prefactor_s(iso_id, s, t, u);
+            complex F = (_charged) ?  _F->prefactor_t(iso_id, t, s, u) + _F->prefactor_u(iso_id, u, t, s)
+                                   :  _F->prefactor_s(iso_id, s, t, u);
+
+            complex H = _H->prefactor_s(iso_id, s, t, u);
+
+            return F + H;
         };
 
         inline complex prefactor_t(id iso_id, complex s, complex t, complex u)
         {
-            complex Ft = (_charged) ? _F->prefactor_t(iso_id, t, s, u) + _F->prefactor_t(iso_id, u, t, s) 
-                                    : _F->prefactor_t(iso_id, s, t, u);
-            return Ft + _H->prefactor_t(iso_id, s, t, u);
+            complex F = (_charged) ?  _F->prefactor_s(iso_id, t, s, u) + _F->prefactor_t(iso_id, u, t, s)
+                                   :  _F->prefactor_t(iso_id, s, t, u);
+
+            complex H = _H->prefactor_t(iso_id, s, t, u);
+            return F + H;
         };
 
         inline complex prefactor_u(id iso_id, complex s, complex t, complex u)
         {
-            return prefactor_t(iso_id, s, u, t);
+            complex F = (_charged) ?  _F->prefactor_s(iso_id, u, t, s) + _F->prefactor_u(iso_id, t, s, u)
+                                   :  _F->prefactor_u(iso_id, s, t, u);
+
+            complex H = _H->prefactor_u(iso_id, s, t, u);
+            return F + H;
         };
 
         // Two identical particles
