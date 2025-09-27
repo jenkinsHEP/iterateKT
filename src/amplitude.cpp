@@ -229,7 +229,7 @@ namespace iterateKT
         // 2nd Derivatives
         d2Fd2s  = central_difference_derivative<double>(2, Fs, s0, e);
         d2Fd2t  = central_difference_derivative<double>(2, Ft, s0, e);
-        d2Fdsdt = mixed_partial_derivatives<double>(F, {s0, s0}, e);
+        d2Fdsdt = mixed_central_derivatives<double>(F, {s0, s0}, e);
 
         // derivatives of s and t with respect to X and Y
         // dsdX = 0,  dtdX = cx
