@@ -27,7 +27,7 @@ namespace iterateKT { namespace kaon
 
         // Whether or not we are going to use the full set of subtractions allowed by 
         // the froissart bound asymptotics
-        static const bool FULL_SUBTRACTIONS = true;
+        static const bool FULL_SUBTRACTIONS = false;
 
         // String letting us know what is being fit
         static std::string data_type(int i)
@@ -67,9 +67,8 @@ namespace iterateKT { namespace kaon
             // χ² from g h k
             if (type == kAll || type == kDalitz)
             {
-                double s0 = (data._option == option::P_ppm) ? (norm(M_KAON_PM) + 3*norm(M_PION_PM))/3
-                                                            : (norm(M_KAON_PM) + 2*norm(M_PION_0) + norm(M_PION_PM))/3;
-                auto dpars  = to_fit->get_dalitz_parameters(derivative_h, s0, {M_PION_PM*M_PION_PM, M_PION_PM*M_PION_PM});
+                double s0   = to_fit->get_kinematics()->s0();
+                auto dpars  = to_fit->get_dalitz_parameters(derivative_h, s0, {norm(M_PION_PM), norm(M_PION_PM)});
                 std::array<double,3> ghk = {dpars[0], dpars[1], dpars[3]};
                 for (int i = 0; i < 3; i++) chi2 += norm((ghk[i]-data._z[i+n])/data._dz[i+n]);
             };
@@ -80,7 +79,7 @@ namespace iterateKT { namespace kaon
         // given by requiring Taylor invariants have vanishing imaginary parts
         static std::vector<complex> process_fitter_parameters(std::vector<complex> in_pars, amplitude amp)
         {
-            double eps = 1E-7, r = amp->get_kinematics()->s0();
+            double eps = 1E-5, r = amp->get_kinematics()->s0();
             
             //------------------------------------------------------------------------
             // First we fix the imaginary parts of the M's and N's (total 3π I=1)

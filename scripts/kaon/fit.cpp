@@ -18,8 +18,19 @@
 void fit()
 {
     using namespace iterateKT;
+    using iterateKT::complex;
 
-    uint N = 10;
+    std::string method = "Simplex";
+    double tolerance   = 1E-6;
+    uint print_level   = 4;
+    uint strategy      = 1;
+
+    // Either choose N and leave initial_guess empty
+    // (do N fits to do with randomized initial guesses)
+    uint N             = 10;
+    std::vector<complex> initial_guess = {};
+    // or specify intitial_guess and do a single fit (ignore N)
+    // std::vector<complex> initial_guess = {-0.726863775, -0.739814627, -4.89801606};
 
     // -----------------------------------------------------------------------
     
@@ -29,15 +40,19 @@ void fit()
 
     // Set up our amplitude 
     amplitude amp = new_amplitude<charged_kaon>(kin, "K⁺ → π⁺π⁺π⁻");
+
+    settings sets = default_settings();
+    sets._cauchy_integrator_depth  = 5;
+    sets._pseudo_integrator_depth  = 5;
     
     // Add all the isobars, note the order they are added will be the order
     // the basis functions are generated
     std::vector<uint> empty = {}; // Pass empty to isobars with no sub polynomials
-    isobar F0 = amp->add_isobar<I1_S0>({0, 1, 2}, 2,       id::I1_S0, "F0"); 
-    isobar F1 = amp->add_isobar<I1_P1>({1},   1, id::I1_P1, "F1"); 
-    isobar F2 = amp->add_isobar<I1_S2>(empty, 2, id::I1_S2, "F2");
-    isobar H1 = amp->add_isobar<I2_P1>({0, 1},1, id::I2_P1, "H1"); 
-    isobar H2 = amp->add_isobar<I2_S2>(empty, 2, id::I2_S2, "H2");
+    isobar F0 = amp->add_isobar<I1_S0>(       2, id::I1_S0, "F0", sets); 
+    isobar F1 = amp->add_isobar<I1_P1>(       1, id::I1_P1, "F1", sets); 
+    isobar F2 = amp->add_isobar<I1_S2>(empty, 1, id::I1_S2, "F2", sets);
+    isobar H1 = amp->add_isobar<I2_P1>(       1, id::I2_P1, "H1", sets); 
+    isobar H2 = amp->add_isobar<I2_S2>(empty, 1, id::I2_S2, "H2", sets);
 
     // Path to precalculated isobar files
     std::string path   = "/scripts/kaon/basis_functions/basis_";
@@ -46,17 +61,7 @@ void fit()
 
     // -----------------------------------------------------------------------
     // Set up data
-    
-    double cgam, cdgam;
-    cgam =  2.9590,  cdgam = 218E-4;
-    data_set wPtoPPM;
-    wPtoPPM._id     = "K+ -> pi+ pi+ pi-";
-    wPtoPPM._z      = {cgam};
-    wPtoPPM._dz     = {cgam};
-    wPtoPPM._N      = 1;
-    wPtoPPM._option = option::P_ppm;
-    wPtoPPM._type   = kaon::fit::kWidth;
-    
+      
     // K+ -> pi+ pi+ pi- dalitz parameters
     double cg, cdg, ch, cdh, ck, cdk;
     cg   = -0.21134, cdg   = 17E-5;
@@ -88,35 +93,45 @@ void fit()
     // -----------------------------------------------------------------------
     // Set up fitter
 
-    fitter<kaon::fit> fitter(amp);
-    fitter.set_print_level(0);
-    fitter.set_strategy(3);
+    fitter<kaon::fit> fitter(amp, method, tolerance);
+    fitter.set_print_level(print_level);
+    fitter.set_strategy(strategy);
 
     // Add data from above
-    // fitter.add_data(wPtoPPM);
     fitter.add_data(dPtoPPM);
     fitter.add_data(dPtoZZP);
 
     // Set up parameters (all real)
-    std::vector<std::string> labels = {"alpha", "beta", "gamma", "zeta", "mu", "nu"};
+    std::vector<std::string> labels = {"alpha", "beta", "gamma", "zeta"};
     fitter.set_parameter_labels(labels);
     for (auto par : labels) fitter.make_real(par);
-    fitter.fix_parameter("mu", 1);
+    fitter.fix_parameter("zeta", 1);
 
     TRandom * guesser = new TRandom(0);
     double best_chi2 = -1; int status;
     std::vector<iterateKT::complex> best_pars;
-    for (int n = 0; n < N; n++)
+
+    if (initial_guess.size() == 0)
     {
-        std::vector<iterateKT::complex> initial_guess;
-        for (int i = 0; i < 5; i++) initial_guess.push_back(guesser->Uniform(-10, 10));
-        fitter.do_fit(initial_guess);
-        if (best_chi2 == -1 || fitter.fcn() <= best_chi2)
+        for (int n = 0; n < N; n++)
         {
-            status    = fitter.status();
-            best_chi2 = fitter.fcn();
-            best_pars = fitter.pars();
+            initial_guess.clear();
+            for (int i = 0; i < labels.size()-1; i++) initial_guess.push_back(guesser->Uniform(-1, 1));
+            fitter.do_fit(initial_guess);
+            if (best_chi2 == -1 || fitter.fcn() <= best_chi2)
+            {
+                status    = fitter.status();
+                best_chi2 = fitter.fcn();
+                best_pars = fitter.pars();
+            };
         };
+    }
+    else
+    {
+        fitter.do_fit(initial_guess);
+        status    = fitter.status();
+        best_chi2 = fitter.fcn();
+        best_pars = fitter.pars();
     };
 
     auto processed_pars = kaon::fit::process_fitter_parameters(best_pars, amp);
@@ -130,8 +145,6 @@ void fit()
     print<15,20>("beta",  processed_pars[1]);
     print<15,20>("gamma", processed_pars[2]);
     print<15,20>("zeta",  processed_pars[3]);
-    print<15,20>("mu",    processed_pars[4]);
-    print<15,20>("nu",    processed_pars[5]);
     divider<20>(2);
     line();
         

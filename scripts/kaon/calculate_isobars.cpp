@@ -15,7 +15,8 @@
 void calculate_isobars()
 {
     using namespace iterateKT;
-
+    using iterateKT::option;
+    
     // -----------------------------------------------------------------------
     
     // Set up general kinematics so everything knows masses
@@ -28,11 +29,11 @@ void calculate_isobars()
     // Add all the isobars, note the order they are added will be the order
     // the basis functions are generated
     std::vector<uint> empty = {}; // Pass empty to isobars with no sub polynomials
-    isobar F0 = solver.add_isobar<I1_S0>({0, 1, 2}, 2, id::I1_S0, "F0"); 
-    isobar F1 = solver.add_isobar<I1_P1>({1},       1, id::I1_P1, "F1"); 
-    isobar F2 = solver.add_isobar<I1_S2>(empty,     2, id::I1_S2, "F2");
-    isobar H1 = solver.add_isobar<I2_P1>({0, 1},    1, id::I2_P1, "H1"); 
-    isobar H2 = solver.add_isobar<I2_S2>(empty,     2, id::I2_S2, "H2");
+    isobar F0 = solver.add_isobar<I1_S0>(       2, id::I1_S0, "F0"); 
+    isobar F1 = solver.add_isobar<I1_P1>(       1, id::I1_P1, "F1"); 
+    isobar F2 = solver.add_isobar<I1_S2>(empty, 1, id::I1_S2, "F2");
+    isobar H1 = solver.add_isobar<I2_P1>(       1, id::I2_P1, "H1"); 
+    isobar H2 = solver.add_isobar<I2_S2>(empty, 1, id::I2_S2, "H2");
 
     // Iterate N times
     int N = 6;
@@ -41,7 +42,7 @@ void calculate_isobars()
     // Export the solution so it can be more easily recalled later
     std::string out_dir = main_dir()+"/scripts/kaon/basis_functions";
     std::filesystem::create_directory(out_dir);
-    solver.export_solution(out_dir+"/basis");
+    solver.export_solution(out_dir+"/basis", 15);
 
     // -----------------------------------------------------------------------
     // Plot Results
@@ -74,23 +75,18 @@ void calculate_isobars()
     };
 
     std::vector<plot> Fs, Hs;
-    Fs.emplace_back(plot_basis(F0, 0, "F_{0}^{#alpha}"));
-    Fs.emplace_back(plot_basis(F1, 0, "F_{1}^{#alpha}"));
-    Fs.emplace_back(plot_basis(F2, 0, "F_{2}^{#alpha}"));
-    Fs.emplace_back(plot_basis(F0, 1, "F_{0}^{#beta}"));
-    Fs.emplace_back(plot_basis(F1, 1, "F_{1}^{#beta}"));
-    Fs.emplace_back(plot_basis(F2, 1, "F_{2}^{#beta}"));
-    Fs.emplace_back(plot_basis(F0, 2, "F_{0}^{#gamma}"));
-    Fs.emplace_back(plot_basis(F1, 2, "F_{1}^{#gamma}"));
-    Fs.emplace_back(plot_basis(F2, 2, "F_{2}^{#gamma}"));
-    Fs.emplace_back(plot_basis(F0, 3, "F_{0}^{#delta}"));
-    Fs.emplace_back(plot_basis(F1, 3, "F_{1}^{#delta}"));
-    Fs.emplace_back(plot_basis(F2, 3, "F_{2}^{#delta}"));
-    plotter.combine({3,4}, Fs, out_dir+"/Fs.pdf");
+    Fs.emplace_back(plot_basis(F0, 0, "#it{F}_{0}^{#alpha}"));
+    Fs.emplace_back(plot_basis(F1, 0, "#it{F}_{1}^{#alpha}"));
+    Fs.emplace_back(plot_basis(F2, 0, "#it{F}_{2}^{#alpha}"));
+    Fs.emplace_back(plot_basis(F0, 1, "#it{F}_{0}^{#beta}"));
+    Fs.emplace_back(plot_basis(F1, 1, "#it{F}_{1}^{#beta}"));
+    Fs.emplace_back(plot_basis(F2, 1, "#it{F}_{2}^{#beta}"));
+    Fs.emplace_back(plot_basis(F0, 2, "#it{F}_{0}^{#gamma}"));
+    Fs.emplace_back(plot_basis(F1, 2, "#it{F}_{1}^{#gamma}"));
+    Fs.emplace_back(plot_basis(F2, 2, "#it{F}_{2}^{#gamma}"));
+    plotter.combine({3,3}, Fs, out_dir+"/Fs.pdf");
 
-    Hs.emplace_back(plot_basis(H1, 4, "H_{1}^{#mu}"));
-    Hs.emplace_back(plot_basis(H2, 4, "H_{2}^{#mu}"));
-    Hs.emplace_back(plot_basis(H1, 5, "H_{1}^{#nu}"));
-    Hs.emplace_back(plot_basis(H2, 5, "H_{2}^{#nu}"));
-    plotter.combine({2,2}, Hs, out_dir+"/Hs.pdf");
+    Hs.emplace_back(plot_basis(H1, 3, "#it{H}_{1}^{#zeta}"));
+    Hs.emplace_back(plot_basis(H2, 3, "#it{H}_{2}^{#zeta}"));
+    plotter.combine({2,1}, Hs, out_dir+"/Hs.pdf");
 };

@@ -36,15 +36,16 @@ namespace iterateKT
         settings sets;
         sets._derivative_h            = 1E-6;
         sets._exclusion_points        = 20;
-        sets._exclusion_offsets       = {3.E-2, 5E-2};
+        sets._exclusion_offsets       = {2.E-2, 5E-2};
         sets._infinitesimal           = 1E-8;
         sets._intermediate_energy     = 1.0;
-        sets._cutoff                  = 10.0;
+        sets._cutoff                  = 20.0;
         sets._interpolation_offset    = 1E-4;
-        sets._interpolation_points    = {400, 10, 100};
+        sets._interpolation_points    = {400, 10, 300};
+        sets._extra_cusp              = norm(0.980);
 
         double xi_sth = 1E-3,   eps_sth = 1E-3;
-        double xi_pth = 1E-4,   eps_pth = 1E-3;
+        double xi_pth = 2E-3,   eps_pth = 1E-2;
         double xi_rth = 2E-2,   eps_rth = 2E-2;
         sets._matching_intervals  = {xi_sth,  xi_pth,  xi_rth };
         sets._expansion_offsets   = {eps_sth, eps_pth, eps_rth};
@@ -134,7 +135,6 @@ namespace iterateKT
             _F = new_amplitude<I1>(xkin); _H = new_amplitude<I2>(xkin);
         };
 
-        //
         inline void set_option(option opt){ _charged = (opt == option::P_ppm); };
 
         // P_ppm(s,t,u) = F(t,s,u) + F(u,t,s) + H(s,t,u)
@@ -144,7 +144,6 @@ namespace iterateKT
         {
             complex F = (_charged) ?  _F->prefactor_t(iso_id, t, s, u) + _F->prefactor_u(iso_id, u, t, s)
                                    :  _F->prefactor_s(iso_id, s, t, u);
-
             complex H = _H->prefactor_s(iso_id, s, t, u);
 
             return F + H;
@@ -154,8 +153,8 @@ namespace iterateKT
         {
             complex F = (_charged) ?  _F->prefactor_s(iso_id, t, s, u) + _F->prefactor_t(iso_id, u, t, s)
                                    :  _F->prefactor_t(iso_id, s, t, u);
-
             complex H = _H->prefactor_t(iso_id, s, t, u);
+
             return F + H;
         };
 
@@ -163,8 +162,8 @@ namespace iterateKT
         {
             complex F = (_charged) ?  _F->prefactor_s(iso_id, u, t, s) + _F->prefactor_u(iso_id, t, s, u)
                                    :  _F->prefactor_u(iso_id, s, t, u);
-
             complex H = _H->prefactor_u(iso_id, s, t, u);
+
             return F + H;
         };
 
