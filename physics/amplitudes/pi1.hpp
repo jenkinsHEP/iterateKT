@@ -59,27 +59,22 @@ namespace iterateKT
         static inline complex deck(complex t, complex M2, complex s)
         {
             // Masses and momenta
-            complex p   = csqrt(kallen(M2, t, complex(_mu2)))/2/csqrt(M2);
-            complex q   = csqrt(kallen(M2, s, complex(_mu2)))/2/csqrt(M2);
-            // Theres vertical cuts here, flip sign if we cross
-            if (real(s-M2)>=_mu2) q *= -1;
-            // phasespace
+            complex mu2 = complex(_mu2);
+            complex p   = csqrt(kallen(M2, t, mu2))/2/csqrt(M2);
+            complex q   = csqrt(kallen(M2, s, mu2))/2/csqrt(M2);
             complex rho = 2*q/csqrt(M2);
-            // Kacser function
-            complex k   = 4*p*q; 
-            // Momentum transfer tau
-            auto    tau = [&](double z)
-            {
-                bool above_rth = real(s) >= norm(csqrt(M2)+_mu);
-                complex x = (above_rth) ? real(s) : s;
-                return 2*_mu2-(M2+_mu2-t)*(M2-x+_mu2)/2/M2+z*k/2; 
-            };
-            // Projection of OPE
-            complex Q0  = (log(_mu2-tau(-1))-log(_mu2-tau(+1)))/k;
-            // Assemble the final discontinuity
-            complex a   = M2-t-s+(_mu2-s)*(_mu2-t)/M2;
-            complex b   = a-_mu2+tau(0);
-            return PI*rho/p/p/16*((k*k-a*a)*Q0+4*b);
+
+            // careful if we cross above the three-body cut
+            // multiply by -1 to not change sign and stay on the same sheet
+            bool above_tbc = (real(s) >= real(M2)+_mu2);
+            if  (above_tbc){ q *= -1; rho *= -1; };
+
+            // Angular argument
+            complex z   = (M2-t-s+(_mu2-t)*(_mu2-s)/M2)/(4*p*q);
+            // Legendre of 2nd kind
+            complex Q0  = (imag(s) < 0) ? log(-(z+1)/(z-1))/2+I*PI/2: (log(-(z+1)/(z-1))-I*PI)/2;
+            // Final discontinuity
+            return rho*q/p*((1-z*z)*Q0+z);
         };
 
         // Assuming a pi- pi- pi+ decay and only P-waves
