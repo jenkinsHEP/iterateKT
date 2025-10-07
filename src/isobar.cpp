@@ -221,14 +221,18 @@ namespace iterateKT
                 double sp = real(_kinematics->t_plus(s));
                 double sm = real(_kinematics->t_minus(s));
 
+                // If region 0, we needs an ieps to avoid cuts
+                // in region 3, both sp & sm are negative and dont need
+                double ieps = (region == 0) ? +1 : 0;
+
                 // Check if we have cusp
                 double sc = _settings._extra_cusp;
                 if (sp > sc && sm < sc)
                 {
-                    return linear_segment(basis_id, {sm, sc, 0}, s, previous) 
-                         + linear_segment(basis_id, {sc, sp, 0}, s, previous);
+                    return linear_segment(basis_id, {sm, sc, ieps}, s, previous) 
+                         + linear_segment(basis_id, {sc, sp, ieps}, s, previous);
                 };
-                return linear_segment(basis_id, {sm, sp, 0}, s, previous);
+                return linear_segment(basis_id, {sm, sp, ieps}, s, previous);
             };
             // s+ is above cut but s- is below cut
             case 1:
