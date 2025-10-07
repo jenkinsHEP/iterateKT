@@ -35,7 +35,7 @@ namespace iterateKT
         double xi_pth = 3E-3,  eps_pth = 4E-3;
         double xi_rth = 3E-1,  eps_rth = 3E-1;
 
-        sets._exclusion_offsets   = {3E-2, 3E-2};
+        sets._exclusion_offsets   = {5E-2, 5E-2};
         sets._matching_intervals  = {xi_sth,  xi_pth,  xi_rth };
         sets._expansion_offsets   = {eps_sth, eps_pth, eps_rth};
         return sets;
@@ -55,6 +55,9 @@ namespace iterateKT
         static constexpr double _mu  = 0.13957000;
         static constexpr double _mu2 = _mu*_mu;
 
+        // ------------------------------------------------------------------------------
+        // Things related to the inclusion of the form factor
+
         static inline complex tau(complex t, complex M2, complex s, double z)
         {
             complex mu2 = complex(_mu2);
@@ -70,10 +73,11 @@ namespace iterateKT
         };
 
         // 3P1 projection of the vanilla OPE
-        // t  -> momentum transfer of (external) Pomeron
-        // M2 -> total 3pi invariant mass
-        // s  -> 2pi subsystem imvariant mass
-        static inline complex deck(complex t, complex M2, complex s)
+        // t    -> momentum transfer of (external) Pomeron
+        // M2   -> total 3pi invariant mass
+        // s    -> 2pi subsystem imvariant mass
+        // mex2 -> exchanged particle mass
+        static inline complex deck(complex t, complex M2, complex s, double mex2)
         {
             // Masses and momenta
             complex mu2 = complex(_mu2);
@@ -88,57 +92,28 @@ namespace iterateKT
             // Momentum tranfer at costheta = 0
             complex t0  = tau(t, M2, s, 0); 
             // Angular argument
-            complex z   = (mu2 - t0)/2/p/q;
+            complex z   = (mex2 - t0)/2/p/q;
 
             // Continution depends on the ieps used for s
             // and not that of z
-            bool above_thr  = real(s) >= norm(2*_mu2);
-            int  sgn        = (sign(imag(s)) <= 0) ? +1 : -1;
+            bool above_thr  = real(s) >= 4*_mu2;
+
             // Legendre of 2nd kind
             complex Q0;
-            if (above_thr) Q0 = log(-(z+1)/(z-1))/2+I*sgn*PI/2;
+            if (above_thr) Q0 = log(-(z+1)/(z-1))/2-I*sign(imag(s))*PI/2;
             else           Q0 = log( (z+1)/(z-1))/2;
 
             // Final discontinuity
             return rho*q/p*((1-z*z)*Q0+z);
         };
-
-        // 3P1 projection of the OPE with an additional monopole FF
-        // t  -> momentum transfer of (external) Pomeron
-        // M2 -> total 3pi invariant mass
-        // s  -> 2pi subsystem imvariant mass
-        // L2 -> cutoff squared
-        static inline complex deck_with_FF(complex t, complex M2, complex s, double L2)
+        static inline complex deck(complex t, complex M2, complex s)
         {
-            // We need the vanilla deck with normal on-shell pion
-            complex delta  = deck(t, M2, s);
+            return deck(t, M2, s, _mu2);
+        };
 
-            complex mu2 = complex(_mu2);
-            complex p   = csqrt(kallen(M2, t, mu2))/2/csqrt(M2);
-            complex q   = csqrt(kallen(M2, s, mu2))/2/csqrt(M2);
-            complex rho = 2*q/csqrt(M2);
-           
-            // careful if we cross above the three-body cut
-            // multiply by -1 to not change sign and stay on the same sheet
-            bool above_3bcut = (real(s) >= real(M2)+_mu2);
-            if  (above_3bcut){ q *= -1; rho *= -1; };
-
-            // Calculate everything again but with different exchange mass
-            complex t0  = tau(t, M2, s, 0); 
-            complex z   = (mu2 - t0)/(2*p*q);
-            complex zp  = (L2  - t0)/(2*p*q);
-
-            // Continution depends on the ieps used for s
-            // and not that of z
-            bool above_thr  = real(s) >= norm(2*_mu2);
-            int  sgn        = (sign(imag(s)) <= 0) ? +1 : -1;
-            complex Q0p;
-            if (above_thr) Q0p = log(-(zp+1)/(zp-1))/2+I*sgn*PI/2;
-            else           Q0p = log( (zp+1)/(zp-1))/2;
-
-            complex deltap = rho*q/p*((1-2*z*zp+zp*zp)*Q0p+(2*z-zp));
-
-            return delta - deltap;
+        static inline complex deck_with_FF(complex t, complex M2, complex s, double lam2)
+        {
+            return deck(t, M2, s, _mu2) - deck(t, M2, s, lam2);
         };
 
         // Assuming a pi- pi- pi+ decay and only P-waves
