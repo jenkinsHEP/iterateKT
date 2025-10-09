@@ -36,18 +36,23 @@ void fit()
     int tbin       = 2;   // which t bin to fit
     int Niter      = 10;  // Number of KT iterations
 
-    // If we're using deck model or not
-    bool deck      = true;
-    bool omega     = false;
-
-    // -----------------------------------------------------------------------
-    // Set up amplitude and iterative solution
-
     // Import our data set first so we can know the m3pi bin
     std::string filename = "tBin_"+to_string(tbin)+"/dalitz_m3piBin_"+to_string(m3pibin)+"_tBin_"+to_string(tbin)+".json";
     data_set data   = COMPASS::parse_JSON(filename);
     double m3pi     = data._extras["m3pi"];
     double t        = data._extras["t"];
+
+    // Contact piece gets just constant as driving term
+    auto   constant = [&](complex sigma){return 1.;};
+    auto   linear   = [&](complex sigma){return sigma;};
+    auto   bubble   = [&](complex sigma){return pi1::bubble(m3pi*m3pi, sigma, 0.1);};
+    auto   deck     = [&](complex sigma){return pi1::deck(t, m3pi*m3pi, sigma);};
+
+    std::vector<std::function<complex(complex)>> driving_terms = {constant, bubble, deck};
+    std::vector<std::string> par_labels = {"alpha", "beta", "gamma"};
+
+    // -----------------------------------------------------------------------
+    // Set up amplitude and iterative solution
 
     // Set up general kinematics so everything knows masses
     kinematics kin = new_kinematics(m3pi, M_PION);
@@ -55,16 +60,6 @@ void fit()
     // Set up our amplitude 
     amplitude amp  = new_amplitude<pi1>(kin, "π₁ → 3π");
 
-    // Contact piece gets just constant as driving term
-    auto   constant = [&](complex sigma){return 1.;};
-    auto   linear   = [&](complex sigma){return sigma;};
-    auto   bw_omega = [&](complex sigma){return sigma/(sigma-norm(M_OMEGA)+I*M_OMEGA*8.68E-3); };
-    auto   Delta    = [&](complex sigma){return pi1::deck(t, m3pi*m3pi, sigma);};
-
-    std::vector<std::function<complex(complex)>> driving_terms = {constant};
-    if (omega) driving_terms.push_back(bw_omega);
-    if (deck)  driving_terms.push_back(Delta);
-    else       driving_terms.push_back(linear);
     // Add isobar using the above function as our driving term
     isobar pwave   =  amp->add_isobar<P_wave>(driving_terms,  3, id::P_wave, "Deck");
 
@@ -75,11 +70,10 @@ void fit()
     // Set up fitter
 
     // These vectors should be same size as Nsub above
-    std::vector<std::string> par_labels = {"alpha"};
-    std::vector<complex> initial_guess  = {1., 1.};
-    if (omega) { par_labels.push_back("omega"); initial_guess.push_back(1.); };
-    if (deck)    par_labels.push_back("delta");
-    else         par_labels.push_back("beta");
+    std::vector<complex> initial_guess;
+    // initial_guess = {958.561539552, complex(-3047.16981324,-367.681603529), complex(814.71708492,-280.28131748)};
+    // initial_guess = {6142.56979901, complex(-10658.6047381,-56.2595412896), complex(537.171377783,-420.213085679) };
+    for (auto x : driving_terms) initial_guess.push_back(1.0);
 
     // Add data
     fitter<COMPASS::fit> fitter(amp);

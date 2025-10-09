@@ -56,7 +56,25 @@ namespace iterateKT
         static constexpr double _mu2 = _mu*_mu;
 
         // ------------------------------------------------------------------------------
-        // Things related to the inclusion of the form factor
+        // Things related to the inclusion of the bubble
+        static inline complex bubble(complex M2, complex s, double lam2)
+        {
+            complex mu2 = complex(_mu2);
+            complex q   = csqrt(kallen(M2, s, mu2))/2/csqrt(M2);
+            complex rho = 2*q/csqrt(M2);
+
+            // careful if we cross above the three-body cut
+            // multiply by -1 to not change sign and stay on the same sheet
+            bool above_3bcut = (real(s) >= real(M2)+_mu2);
+            if  (above_3bcut){ q *= -1; rho *= -1; };
+
+            complex z2 = q*q / lam2;
+            complex blatt_weisskopf = 1./(1+z2);
+            return z2*blatt_weisskopf*rho;
+        };
+
+        // ------------------------------------------------------------------------------
+        // Things related to the inclusion of the Deck triangle
 
         static inline complex tau(complex t, complex M2, complex s, double z)
         {

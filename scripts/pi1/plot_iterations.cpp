@@ -35,11 +35,15 @@ void plot_iterations()
     
     auto   constant = [&](complex sigma){return 1.;};
     auto   linear   = [&](complex sigma){return sigma;};
-    auto   omega    = [&](complex sigma){return sigma/(sigma-norm(M_OMEGA)+I*M_OMEGA*8.68E-3); };
     auto   deck     = [&](complex sigma){return pi1::deck(t, m3pi*m3pi, sigma);};
 
-    // Which production function to use
-    std::function<complex(complex)> driving_term = linear;
+    // These two involve a choice for the cutoff
+    double lambda2   = 0.2;
+    auto   bubble    = [&](complex sigma){return pi1::bubble(m3pi*m3pi, sigma, lambda2);};
+    auto   deck_FF   = [&](complex sigma){return pi1::deck_with_FF(t, m3pi*m3pi, sigma, lambda2);};
+
+    // Choose which of the above you want to plot
+    std::function<complex(complex)> driving_term = bubble;
 
     // -----------------------------------------------------------------------
     // Set up, shouldnt need to change anything below this line
@@ -48,7 +52,6 @@ void plot_iterations()
     solver solver(kinematics);
     
     settings sets = default_settings();
-    sets._extra_cusp = norm(M_OMEGA);
     
     isobar pwave = solver.add_isobar<P_wave>(driving_term, asymptotic_power, id::P_wave, "P_wave", sets);
     
@@ -60,7 +63,7 @@ void plot_iterations()
 
     timer.start();
 
-    std::array<double,2> bounds = {0, 2.6};
+    std::array<double,2> bounds = {0., 2.5};
     double A = kinematics->A();
     double B = kinematics->B();
     double C = kinematics->C();
@@ -71,8 +74,9 @@ void plot_iterations()
     p1.set_xrange(bounds);
     p1.set_labels("#sigma   [GeV^{2}]", "#it{F}(#it{t}, #it{m}_{3#pi}^{2} #; #sigma + #it{i}#epsilon)");
     p1.add_horizontal(0);
+    p1.add_header("#it{t} = #minus 0.1, #it{m}_{3#pi}^{2} = (1.4)^{2}");
     p1.shade_region({A,C});
-    p1.set_legend(0.7, 0.6);
+    p1.set_legend(0.685, 0.6);
     p1.add_curve(bounds, [&](double s) { return std::real(pwave->basis_function(0, s+IEPS)); }, dotted(jpacColor::Blue));
     p1.add_curve(bounds, [&](double s) { return std::imag(pwave->basis_function(0, s+IEPS)); }, dotted(jpacColor::Red));
 
