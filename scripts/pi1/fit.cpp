@@ -33,7 +33,7 @@ void fit()
     // Operating options
 
     int m3pibin    = 22;  // which m3pi bin to fit
-    int tbin       = 2;   // which t bin to fit
+    int tbin       = 3;   // which t bin to fit
     int Niter      = 10;  // Number of KT iterations
 
     // Import our data set first so we can know the m3pi bin
@@ -45,7 +45,8 @@ void fit()
     // Contact piece gets just constant as driving term
     auto   constant = [&](complex sigma){return 1.;};
     auto   linear   = [&](complex sigma){return sigma;};
-    auto   bubble   = [&](complex sigma){return pi1::bubble(m3pi*m3pi, sigma, 0.1);};
+    auto   quad     = [&](complex sigma){return sigma*sigma;};
+    auto   bubble   = [&](complex sigma){return pi1::bubble(m3pi*m3pi, sigma, 0.5);};
     auto   deck     = [&](complex sigma){return pi1::deck(t, m3pi*m3pi, sigma);};
 
     std::vector<std::function<complex(complex)>> driving_terms = {constant, bubble, deck};
@@ -71,12 +72,14 @@ void fit()
 
     // These vectors should be same size as Nsub above
     std::vector<complex> initial_guess;
-    // initial_guess = {958.561539552, complex(-3047.16981324,-367.681603529), complex(814.71708492,-280.28131748)};
-    // initial_guess = {6142.56979901, complex(-10658.6047381,-56.2595412896), complex(537.171377783,-420.213085679) };
     for (auto x : driving_terms) initial_guess.push_back(1.0);
+    // initial_guess = {642.8101991312 , complex(-5175.6631008,-4111.51604433), complex(2196.23270753,1341.42150735)};
 
     // Add data
-    fitter<COMPASS::fit> fitter(amp);
+    fitter<COMPASS::fit> fitter(amp, "Combined");
+    fitter.set_tolerance(1E-9);
+    fitter.set_print_level(3);
+    fitter.set_strategy(5);
     fitter.add_data(data);
     
     fitter.set_parameter_labels(par_labels);
