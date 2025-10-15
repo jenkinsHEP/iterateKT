@@ -15,6 +15,7 @@
 #include "utilities.hpp"
 #include "kinematics.hpp"
 #include "settings.hpp"
+#include "timer.hpp"
 #include "GKPY.hpp"
 
 #include"isobars/pi1.hpp"
@@ -57,6 +58,11 @@ namespace iterateKT
 
         // ------------------------------------------------------------------------------
         // Things related to the inclusion of the bubble
+
+        // P-wave projection of 2 particle phase space with BW factor
+        // M2   -> total 3pi invariant mass
+        // s    -> 2pi subsystem mass
+        // lam2 -> cutoff mass squared (mass of first ignored particle)
         static inline complex bubble(complex M2, complex s, double lam2)
         {
             complex mu2 = complex(_mu2);
@@ -142,6 +148,88 @@ namespace iterateKT
         inline complex prefactor_t(id iso_id, complex s, complex t, complex u){ return - prefactor_s(iso_id, t, s, u); };
         inline complex prefactor_u(id iso_id, complex s, complex t, complex u){ return 0.; };
     };
+
+    // ------------------------------------------------------------------------------
+    // The following is a container amplitude which holds multiple copies of the above
+    // but at different bins in production t for simultaneous fits
+
+    enum class option : unsigned int { tbin0, tbin1, tbin2, tbin3, set_m3pi2, set_lam2 };
+
+    class pi1_tbins : public raw_amplitude
+    {
+        public:
+
+        pi1_tbins(kinematics xkin, std::string id) 
+        : raw_amplitude(xkin, id)
+        {
+            for (int i = 0; i < 4; i++) _tbins[i] = new_amplitude<pi1>(xkin, "tbin " + to_string(i));
+            initialize();
+        };
+
+        inline void set_option(option opt)
+        {
+            switch (opt)
+            {
+                case option::tbin0: _current = _tbins[0]; break;
+                case option::tbin1: _current = _tbins[1]; break;
+                case option::tbin2: _current = _tbins[2]; break;
+                case option::tbin3: _current = _tbins[3]; break;
+                default: return;
+            };
+        };
+        inline void set_option(option opt, double x)
+        {
+            if (opt == option::set_m3pi2) _m3pi2 = x;
+            if (opt == option::set_lam2)  _lam2  = x;
+            return;  
+        };
+        inline uint N_pars(){ return _current->N_pars(); };
+        inline void set_parameters(std::vector<complex> x){ _current->set_parameters(x); };
+        inline complex evaluate(complex s, complex t, complex u){ return _current->evaluate(s, t, u); };
+
+        private:
+
+        // Fixed m3pi and bubble cutoff sqaured
+        double _m3pi2 = 1.4, _lam2 = norm(M_RHO);
+
+        // Save each of the 4 bins as a pointer
+        std::array<amplitude,4> _tbins;
+
+        // This is the one that gets called
+        amplitude _current;
+
+        inline void initialize()
+        {
+            int    niter = 10; // number of KT iterations to do
+
+            // These are the same for all
+            auto constant = [&](complex sigma){return 1.;};
+            auto bubble   = [&](complex sigma){return pi1::bubble(_m3pi2, sigma, _lam2);};
+
+            // These change as t changes
+            std::array<double,4> t = {-0.12, -0.17, -0.26, -0.66};
+            auto deck = [&](double m3pi2, double t)
+            { 
+                return [m3pi2,t](complex sigma){ return pi1::deck(t, m3pi2, sigma);}; 
+            };
+
+            timer timer;
+            timer.start();
+
+            // Set up all the amplitudes
+            for (int i = 0; i < 4; i++)
+            {
+                _tbins[i]->add_isobar<P_wave>({constant, deck(_m3pi2, t[i])}, 3, id::P_wave, "P-wave");
+                _tbins[i]->iterate(niter);
+                timer.lap("iterated tbin " + to_string(i));
+            };
+            timer.stop(); timer.print_elapsed();
+
+            // At end place the first one in _current
+            set_option(option::tbin0);
+        };
+    };
+
 }; // namespace iterateKT 
 
 #endif // PI1_AMPLITUDES_HPP
