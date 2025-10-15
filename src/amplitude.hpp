@@ -84,9 +84,10 @@ namespace iterateKT
 
         // Pass an option flag and so something. By default we dont do anything 
         // Can be overloaded to do whatever you want 
-        virtual inline void set_option(option opt){ return; }; 
+        virtual inline void set_option(option opt)          { return; }; 
+        virtual inline void set_option(option opt, double x){ return; }; 
 
-        inline void set_parameters( std::vector<complex> pars)
+        virtual inline void set_parameters( std::vector<complex> pars)
         {
             if (pars.size() != _subtractions->N_basis())
             {
@@ -97,11 +98,11 @@ namespace iterateKT
         };
 
         // Number of free parameters (used by fitters)
-        inline uint N_pars(){ return _subtractions->N_basis(); };
+        virtual inline uint N_pars(){ return _subtractions->N_basis(); };
 
         // Get a vector of the currently saved subtraction parameters
-        inline std::vector<complex> get_pars()       { return _subtractions->_values; };
-        inline std::vector<complex> get_parameters() { return get_pars(); };
+        virtual inline std::vector<complex> get_pars()       { return _subtractions->_values; };
+        virtual inline std::vector<complex> get_parameters() { return get_pars(); };
 
         // -----------------------------------------------------------------------
         // Automate making plots of the amplitude
