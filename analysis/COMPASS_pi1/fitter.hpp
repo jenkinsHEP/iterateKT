@@ -14,7 +14,8 @@
 
 namespace iterateKT { namespace COMPASS
 {
-    struct fit
+    // This fitter takes a single data set and fits to it
+    struct fit_single_tbin
     {
         static std::string data_type(int i)
         {
@@ -27,12 +28,13 @@ namespace iterateKT { namespace COMPASS
             };
         };
 
-        // Dont need any additional processing
-        static std::vector<complex> process_fitter_parameters(std::vector<complex> pars, amplitude to_fit)
+        // Dont need any additional processing, just save
+        static std::vector<complex> process_parameters(std::vector<complex> pars, amplitude to_fit)
         {
-            return pars;
+            to_fit->set_parameters(pars); 
+            return pars; 
         };
-
+            
         // Function to minimize
         // Filters whether we're looking at the real or imaginary parts 
         static double fcn(std::vector<data_set> & data_vector, amplitude to_fit)
@@ -40,6 +42,7 @@ namespace iterateKT { namespace COMPASS
             double chi2 = 0;
             for (auto data : data_vector)
             {
+                to_fit->set_option(data._option);
                 for (int i = 0; i < data._N; i++)
                 {
                     double from_data  = data._z[i];
@@ -62,6 +65,37 @@ namespace iterateKT { namespace COMPASS
                 };
             };
             return chi2;
+        };
+    };
+
+    // This one on the other hand assumes we are looking at multiple tbins and have couplings with explicit t-dependence
+    struct fit_all_tbins
+    {
+        // None of these change
+        static std::string data_type(int i){ return fit_single_tbin::data_type(i); };
+        static double fcn(std::vector<data_set> & data_vector, amplitude to_fit)
+        {
+            return fit_single_tbin::fcn(data_vector, to_fit);
+        };
+
+        // Take in the parameters with the extra form factor slopes at the end
+        static std::vector<complex> process_parameters(std::vector<complex> pars, amplitude to_fit)
+        {
+            // We assume pars.size() = 6
+            // first three are the subtraction coefficients
+            // last  three are the t-slopes
+            std::array<double,4> t    = {-0.12,         -0.17,         -0.26,         -0.66};
+            std::array<option,4> opts = {option::tbin0, option::tbin1, option::tbin2, option::tbin3};
+
+            for (int i = 0; i < 4; i++)
+            {
+                std::vector<complex> new_pars;
+                // g -> g * t exp(bt)
+                for (int j = 0; j < 2; j++) new_pars.push_back(pars[j]*t[i]*exp(pars[2+j]*t[i]));
+                to_fit->set_option(opts[i]);
+                to_fit->set_parameters(new_pars);                
+            };  
+            return pars;
         };
     };
 }; /* namespace COMPASS */ }; /* namespace iterateKT */
