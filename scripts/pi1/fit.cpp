@@ -32,7 +32,7 @@ void fit()
     // -----------------------------------------------------------------------
     // Operating options
 
-    int m3pibin    = 22;  // which m3pi bin to fit
+    int m3pibin    = 21;  // which m3pi bin to fit
     int Niter      = 10;  // Number of KT iterations
 
     // Import our data sets 
@@ -65,7 +65,6 @@ void fit()
     fitter<COMPASS::fit_all_tbins> fitter(amp, "Combined");
     fitter.set_tolerance(1E-5);
     fitter.set_print_level(3);
-    fitter.set_strategy(5);
 
     // Add all bins
     fitter.add_data(tbin0);
@@ -76,13 +75,12 @@ void fit()
     // Add three t-slopes in addition to three subtraction coeffs
     fitter.add_extra_parameters(2);
     
-    std::vector<std::string> labels = {"alpha", "gamma", "b_alpha", "b_gamma"};
+    std::vector<std::string> labels = {"alpha", "delta", "b_alpha", "b_delta"};
     fitter.set_parameter_labels(labels);
-    fitter.make_real("alpha"); 
+    fitter.fix_argument("alpha", 0.); 
     fitter.make_real("b_alpha"); 
-    fitter.make_real("b_gamma"); 
+    fitter.make_real("b_delta"); 
 
-    std::vector<complex> initial_guess  = {1., 1., 0., 0};
-
+    std::vector<complex> initial_guess  = {1., 1., 0., 0.};
     fitter.do_fit(initial_guess);
 };

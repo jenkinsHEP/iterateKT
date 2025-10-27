@@ -204,6 +204,7 @@ namespace iterateKT
 
             // These are the same for all
             auto constant = [&](complex sigma){return 1.;};
+            auto linear   = [&](complex sigma){return sigma;};
             auto bubble   = [&](complex sigma){return pi1::bubble(_m3pi2, sigma, _lam2);};
 
             // These change as t changes

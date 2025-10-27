@@ -104,7 +104,7 @@ namespace iterateKT { namespace COMPASS
         auto t_lower = data["bin_ranges"]["t_lower_limit"].template get<double>();
         double t = -(t_upper + t_lower)/2;
     
-        std::string id = "m3π = " + to_string(m3pi,2) + ", t' = " + to_string(-t,2);
+        std::string id = "m3π = " + to_string(m3pi,3) + ", t' = " + to_string(-t,3);
 
         auto bins      = data["bin_centers"];
         auto abs_M     = data["abs_M"];

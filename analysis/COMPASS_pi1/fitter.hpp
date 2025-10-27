@@ -90,8 +90,8 @@ namespace iterateKT { namespace COMPASS
             for (int i = 0; i < 4; i++)
             {
                 std::vector<complex> new_pars;
-                // g -> g * t exp(bt)
-                for (int j = 0; j < 2; j++) new_pars.push_back(pars[j]*t[i]*exp(pars[2+j]*t[i]));
+                // g -> g * t exp{b(t-t_0)}
+                for (int j = 0; j < 2; j++) new_pars.push_back(pars[j]*t[i]*exp(pars[2+j]*(t[i]-t[0])));
                 to_fit->set_option(opts[i]);
                 to_fit->set_parameters(new_pars);                
             };  
