@@ -59,7 +59,8 @@ void single_fit()
     kinematics kin = new_kinematics(m3pi, M_PION);
     
     // Set up our amplitude 
-    amplitude amp  = new_amplitude<pi1>(kin, "π₁ → 3π");
+    amplitude amp  = new_amplitude<pi1>(kin);
+    amp->set_name("π₁ → 3π");
 
     // Add isobar using the above function as our driving term
     isobar pwave   =  amp->add_isobar<P_wave>(driving_terms,  3, id::P_wave, "Deck");

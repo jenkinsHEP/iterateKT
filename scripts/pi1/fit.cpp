@@ -56,8 +56,10 @@ void fit()
     
     // Set up our amplitude 
     // the pi1_tbins::initialize should handle adding the isobars
-    amplitude amp    = new_amplitude<pi1_tbins>(kin, "π₁ → 3π");
+    amplitude amp    = new_amplitude<pi1_tbins>(kin);
+    amp->set_name("π₁ → 3π");
 
+    exit(1);
     // -----------------------------------------------------------------------
     // Set up fitter
 

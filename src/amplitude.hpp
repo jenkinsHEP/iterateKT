@@ -35,9 +35,17 @@ namespace iterateKT
 
     // This function serves as our "constructor"
     template<class A=raw_amplitude>
-    inline amplitude new_amplitude(kinematics kin, std::string id = "amplitude")
+    inline amplitude new_amplitude(kinematics kin)
     {
-        auto x = std::make_shared<A>(kin, id);
+        auto x = std::make_shared<A>(kin);
+        return std::static_pointer_cast<raw_amplitude>(x);
+    };
+
+    // This function serves as our "constructor" with some extra needed arg
+    template<class A=raw_amplitude, typename B>
+    inline amplitude new_amplitude(kinematics kin, B extra_args)
+    {
+        auto x = std::make_shared<A>(kin, extra_args);
         return std::static_pointer_cast<raw_amplitude>(x);
     };
 
@@ -48,8 +56,7 @@ namespace iterateKT
 
         // Define only the masses here. 
         // The amplitude structure from quantum numbers will come later
-        raw_amplitude(kinematics xkin, std::string id) : solver(xkin), _name(id)
-        {};
+        raw_amplitude(kinematics xkin) : solver(xkin) {};
    
         // Evaluate the full amplitude.
         virtual complex evaluate(complex s, complex t, complex u);

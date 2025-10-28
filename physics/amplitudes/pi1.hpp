@@ -16,7 +16,6 @@
 #include "kinematics.hpp"
 #include "settings.hpp"
 #include "timer.hpp"
-#include "GKPY.hpp"
 
 #include"isobars/pi1.hpp"
 #include <boost/math/quadrature/gauss_kronrod.hpp>
@@ -39,6 +38,10 @@ namespace iterateKT
         sets._exclusion_offsets   = {5E-2, 5E-2};
         sets._matching_intervals  = {xi_sth,  xi_pth,  xi_rth };
         sets._expansion_offsets   = {eps_sth, eps_pth, eps_rth};
+
+        phase_args iso_1   = {"madrid/delta_11.dat", 1.69,  1, 1, 2};
+        sets._phase_shifts = { {id::P_wave, iso_1}, {id::Contact, iso_1}, {id::Deck, iso_1} };
+
         return sets;
     };
 
@@ -47,8 +50,7 @@ namespace iterateKT
         public: 
         
         // Constructor
-        pi1(kinematics kin, std::string id) : raw_amplitude(kin,id)
-        {};
+        pi1(kinematics kin) : raw_amplitude(kin) {};
         
         // Spin 1 decay so (2j+1) = 3
         inline double combinatorial_factor(){ return 3; };
@@ -150,19 +152,23 @@ namespace iterateKT
     };
 
     // ------------------------------------------------------------------------------
-    // The following is a container amplitude which holds multiple copies of the above
+    // The following are container amplitudes which holds multiple copies of the above
     // but at different bins in production t for simultaneous fits
 
-    enum class option : unsigned int { tbin0, tbin1, tbin2, tbin3, set_m3pi2, set_lam2 };
+    enum class option : unsigned int { tbin0, tbin1, tbin2, tbin3, set_m3pi2, set_lam2, set_bin };
 
     class pi1_tbins : public raw_amplitude
     {
         public:
 
-        pi1_tbins(kinematics xkin, std::string id) 
-        : raw_amplitude(xkin, id)
+        pi1_tbins(kinematics xkin)
+        : raw_amplitude(xkin)
         {
-            for (int i = 0; i < 4; i++) _tbins[i] = new_amplitude<pi1>(xkin, "tbin " + to_string(i));
+            for (int i = 0; i < 4; i++) 
+            { 
+                _tbins[i] = new_amplitude<pi1>(xkin);
+                _tbins[i]->set_name("tbin " + to_string(i));
+            };
             initialize();
         };
 
@@ -228,6 +234,36 @@ namespace iterateKT
 
             // At end place the first one in _current
             set_option(option::tbin0);
+        };
+    };
+
+    // Or hold a grid of KT amplitudes im both m3pi and t simultaneosuly
+    class pi1_2D_binned : public raw_amplitude
+    {
+        public:
+
+        pi1_2D_binned(kinematics xkin, std::vector<double> m3pibins) 
+        : raw_amplitude(xkin)
+        {
+            print("we got ", m3pibins.size());
+            initialize();
+        };
+
+        inline uint N_pars(){ return _current->N_pars(); };
+        inline void set_parameters(std::vector<complex> x){ _current->set_parameters(x); };
+        inline complex evaluate(complex s, complex t, complex u){ return _current->evaluate(s, t, u); };
+
+        private:
+
+        // Save each of the 4 bins as a pointer
+        std::vector<amplitude> _m3pibins;
+
+        // This is the one that gets called
+        amplitude _current;
+
+        inline void initialize()
+        {
+            return;
         };
     };
 
