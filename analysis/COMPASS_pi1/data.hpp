@@ -26,7 +26,7 @@ using json = nlohmann::json;
 namespace iterateKT { namespace COMPASS
 {
     // Static identifiers for data_set types
-    static const int kReal = 0, kImag = 1, kAbs = 2, kReal1D = 3, kImag1D = 4;
+    static const int kReal = 0, kImag = 1, kAbs = 2, kReal1D = 3, kImag1D = 4, kDalitz = 5;
     
     inline std::array<data_set,2>  parse_JSON_1D(std::string input)
     {
@@ -138,7 +138,7 @@ namespace iterateKT { namespace COMPASS
         //  Organize everything
         out._N    = N_actual;         
         out._id   = id;               
-        out._type = kAbs;     
+        out._type = kDalitz;     
         out._extras["Nbins"] = N; 
         out._extras["m3pi"] = m3pi; 
         out._extras["t"]    = t;    
@@ -146,6 +146,17 @@ namespace iterateKT { namespace COMPASS
         out._y = sig2;             
         out._z = absM; out._dz = errM;               
 
+        return out;
+    };
+
+    // Do the above but input bin numbers IDs which are subsequently saved in the data_set
+    inline data_set parse_JSON(uint m3pi_bin, uint t_bin)
+    {
+        std::string sm3pi = to_string(m3pi_bin), st = to_string(t_bin);
+        std::string filename = "tBin_"+st+"/dalitz_m3piBin_"+sm3pi+"_tBin_"+st+".json";
+        auto out = parse_JSON(filename);
+        out._extras["t_bin"]    = t_bin;
+        out._extras["m3pi_bin"] = m3pi_bin;
         return out;
     };
 

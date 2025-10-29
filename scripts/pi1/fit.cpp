@@ -36,14 +36,10 @@ void fit()
     int Niter      = 10;  // Number of KT iterations
 
     // Import our data sets 
-    data_set tbin0   = COMPASS::parse_JSON("tBin_0/dalitz_m3piBin_"+to_string(m3pibin)+"_tBin_0.json");
-    tbin0._option    = option::tbin0;
-    data_set tbin1   = COMPASS::parse_JSON("tBin_1/dalitz_m3piBin_"+to_string(m3pibin)+"_tBin_1.json");
-    tbin1._option    = option::tbin1;
-    data_set tbin2   = COMPASS::parse_JSON("tBin_2/dalitz_m3piBin_"+to_string(m3pibin)+"_tBin_2.json");
-    tbin2._option    = option::tbin2;
-    data_set tbin3   = COMPASS::parse_JSON("tBin_3/dalitz_m3piBin_"+to_string(m3pibin)+"_tBin_3.json");
-    tbin3._option    = option::tbin3;
+    data_set tbin0   = COMPASS::parse_JSON(m3pibin, 0);
+    data_set tbin1   = COMPASS::parse_JSON(m3pibin, 1);
+    data_set tbin2   = COMPASS::parse_JSON(m3pibin, 2);
+    data_set tbin3   = COMPASS::parse_JSON(m3pibin, 3);
     
     // All should have the same m3pi
     double m3pi      = tbin0._extras["m3pi"];
@@ -56,15 +52,14 @@ void fit()
     
     // Set up our amplitude 
     // the pi1_tbins::initialize should handle adding the isobars
-    amplitude amp    = new_amplitude<pi1_tbins>(kin);
+    amplitude amp    = new_amplitude<pi1_across_tbins>(kin, COMPASS::t_bins);
     amp->set_name("π₁ → 3π");
 
-    exit(1);
     // -----------------------------------------------------------------------
     // Set up fitter
 
     // 
-    fitter<COMPASS::fit_all_tbins> fitter(amp, "Combined");
+    fitter<COMPASS::fit_across_tbins> fitter(amp, "Combined");
     fitter.set_tolerance(1E-5);
     fitter.set_print_level(3);
 
@@ -83,6 +78,6 @@ void fit()
     fitter.make_real("b_alpha"); 
     fitter.make_real("b_delta"); 
 
-    std::vector<complex> initial_guess  = {1., 1., 0., 0.};
+    std::vector<complex> initial_guess  = {1276.752, complex(-2753.71753669,-1282.14005342), 3.14681604064, 19.3099100137};
     fitter.do_fit(initial_guess);
 };

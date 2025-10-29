@@ -37,8 +37,7 @@ void single_fit()
     int Niter      = 10;  // Number of KT iterations
 
     // Import our data set first so we can know the m3pi bin
-    std::string filename = "tBin_"+to_string(tbin)+"/dalitz_m3piBin_"+to_string(m3pibin)+"_tBin_"+to_string(tbin)+".json";
-    data_set data   = COMPASS::parse_JSON(filename);
+    data_set data   = COMPASS::parse_JSON(m3pibin, tbin);
     double m3pi     = data._extras["m3pi"];
     double t        = data._extras["t"];
 
@@ -76,7 +75,7 @@ void single_fit()
     for (auto x : driving_terms) initial_guess.push_back(1.0);
 
     // Add data
-    fitter<COMPASS::fit_single_tbin> fitter(amp, "Combined");
+    fitter<COMPASS::fit_single_bin> fitter(amp, "Combined");
     fitter.set_tolerance(1E-9);
     fitter.set_print_level(3);
     fitter.set_strategy(5);

@@ -155,39 +155,32 @@ namespace iterateKT
     // The following are container amplitudes which holds multiple copies of the above
     // but at different bins in production t for simultaneous fits
 
-    enum class option : unsigned int { tbin0, tbin1, tbin2, tbin3, set_m3pi2, set_lam2, set_bin };
+    enum class option : unsigned int { set_m3pi2, set_lam2, set_m3pibin, set_tbin };
 
-    class pi1_tbins : public raw_amplitude
+    class pi1_across_tbins : public raw_amplitude
     {
         public:
 
-        pi1_tbins(kinematics xkin)
-        : raw_amplitude(xkin)
+        pi1_across_tbins(kinematics xkin, std::array<double,4> tvals)
+        : raw_amplitude(xkin), _tvals(tvals)
         {
             for (int i = 0; i < 4; i++) 
             { 
-                _tbins[i] = new_amplitude<pi1>(xkin);
+                _tbins.emplace_back(new_amplitude<pi1>(xkin));
                 _tbins[i]->set_name("tbin " + to_string(i));
             };
             initialize();
         };
 
-        inline void set_option(option opt)
+        inline void set_option(option opt, double x)
         {
             switch (opt)
             {
-                case option::tbin0: _current = _tbins[0]; break;
-                case option::tbin1: _current = _tbins[1]; break;
-                case option::tbin2: _current = _tbins[2]; break;
-                case option::tbin3: _current = _tbins[3]; break;
+                case option::set_m3pi2: _m3pi2 = x; break;
+                case option::set_lam2:  _lam2  = x; break;
+                case option::set_tbin:  _current = _tbins[int(std::round(x))]; break;
                 default: return;
             };
-        };
-        inline void set_option(option opt, double x)
-        {
-            if (opt == option::set_m3pi2) _m3pi2 = x;
-            if (opt == option::set_lam2)  _lam2  = x;
-            return;  
         };
         inline uint N_pars(){ return _current->N_pars(); };
         inline void set_parameters(std::vector<complex> x){ _current->set_parameters(x); };
@@ -199,7 +192,8 @@ namespace iterateKT
         double _m3pi2 = 1.4, _lam2 = norm(M_RHO);
 
         // Save each of the 4 bins as a pointer
-        std::array<amplitude,4> _tbins;
+        std::array<double,4>   _tvals;
+        std::vector<amplitude> _tbins;
 
         // This is the one that gets called
         amplitude _current;
@@ -208,13 +202,8 @@ namespace iterateKT
         {
             int    niter = 10; // number of KT iterations to do
 
-            // These are the same for all
-            auto constant = [&](complex sigma){return 1.;};
-            auto linear   = [&](complex sigma){return sigma;};
-            auto bubble   = [&](complex sigma){return pi1::bubble(_m3pi2, sigma, _lam2);};
-
             // These change as t changes
-            std::array<double,4> t = {-0.12, -0.17, -0.26, -0.66};
+            auto constant = [](complex sigma){ return complex(1.); };
             auto deck = [&](double m3pi2, double t)
             { 
                 return [m3pi2,t](complex sigma){ return pi1::deck(t, m3pi2, sigma);}; 
@@ -226,47 +215,16 @@ namespace iterateKT
             // Set up all the amplitudes
             for (int i = 0; i < 4; i++)
             {
-                _tbins[i]->add_isobar<P_wave>({constant, deck(_m3pi2, t[i])}, 3, id::P_wave, "P-wave");
+                _tbins[i]->add_isobar<P_wave>({constant, deck(_m3pi2, _tvals[i])}, 3, id::P_wave, "P-wave");
                 _tbins[i]->iterate(niter);
                 timer.lap("iterated tbin " + to_string(i));
             };
             timer.stop(); timer.print_elapsed();
 
             // At end place the first one in _current
-            set_option(option::tbin0);
+            set_option(option::set_tbin, 0);
         };
     };
-
-    // Or hold a grid of KT amplitudes im both m3pi and t simultaneosuly
-    class pi1_2D_binned : public raw_amplitude
-    {
-        public:
-
-        pi1_2D_binned(kinematics xkin, std::vector<double> m3pibins) 
-        : raw_amplitude(xkin)
-        {
-            print("we got ", m3pibins.size());
-            initialize();
-        };
-
-        inline uint N_pars(){ return _current->N_pars(); };
-        inline void set_parameters(std::vector<complex> x){ _current->set_parameters(x); };
-        inline complex evaluate(complex s, complex t, complex u){ return _current->evaluate(s, t, u); };
-
-        private:
-
-        // Save each of the 4 bins as a pointer
-        std::vector<amplitude> _m3pibins;
-
-        // This is the one that gets called
-        amplitude _current;
-
-        inline void initialize()
-        {
-            return;
-        };
-    };
-
 }; // namespace iterateKT 
 
 #endif // PI1_AMPLITUDES_HPP

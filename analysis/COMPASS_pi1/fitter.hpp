@@ -14,18 +14,16 @@
 
 namespace iterateKT { namespace COMPASS
 {
+    // common central values for the 4 t-values using in all m3pi bins
+    static const std::array<double,4> t_bins = {-0.12, -0.17,  -0.26,  -0.66};
+
     // This fitter takes a single data set and fits to it
-    struct fit_single_tbin
+    struct fit_single_bin
     {
         static std::string data_type(int i)
         {
-            switch (i)
-            {
-                case kReal: return "Re (M)";
-                case kImag: return "Im (M)";
-                case kAbs:  return "Abs (M)";
-                default: return "ERROR!";
-            };
+            if (i == kDalitz) return "Dalitz Plot";
+            else return "ERROR!";
         };
 
         // Dont need any additional processing, just save
@@ -42,26 +40,15 @@ namespace iterateKT { namespace COMPASS
             double chi2 = 0;
             for (auto data : data_vector)
             {
-                to_fit->set_option(data._option);
+                to_fit->set_option(option::set_tbin,    data._extras["t_bin"]);
+                to_fit->set_option(option::set_m3pibin, data._extras["m3pi_bin"]);
                 for (int i = 0; i < data._N; i++)
                 {
                     double from_data  = data._z[i];
                     iterateKT::complex from_model = to_fit->evaluate(data._x[i], data._y[i]);  
 
-                    switch (data._type)
-                    {
-                        // These two use difference of squares
-                        case kReal: chi2 += norm(from_data - real(from_model));        break;
-                        case kImag: chi2 += norm(from_data - imag(from_model));        break;
-                        // This is a true chi2
-                        case kAbs:
-                        {
-                            if (is_zero(data._dz[i])) continue;
-                            chi2  += norm((from_data - abs(from_model)) / data._dz[i]); 
-                            break;
-                        };
-                        default: break;
-                    };
+                    if (is_zero(data._dz[i])) continue;
+                    chi2  += norm((from_data - abs(from_model)) / data._dz[i]); 
                 };
             };
             return chi2;
@@ -69,30 +56,26 @@ namespace iterateKT { namespace COMPASS
     };
 
     // This one on the other hand assumes we are looking at multiple tbins and have couplings with explicit t-dependence
-    struct fit_all_tbins
+    struct fit_across_tbins
     {
         // None of these change
-        static std::string data_type(int i){ return fit_single_tbin::data_type(i); };
+        static std::string data_type(int i)
+        { return fit_single_bin::data_type(i); };
         static double fcn(std::vector<data_set> & data_vector, amplitude to_fit)
-        {
-            return fit_single_tbin::fcn(data_vector, to_fit);
-        };
+        { return fit_single_bin::fcn(data_vector, to_fit); };
 
         // Take in the parameters with the extra form factor slopes at the end
+        // We assume pars.size() = 4
+        // first two are the subtraction coefficients
+        // last  two are the t-slopes
         static std::vector<complex> process_parameters(std::vector<complex> pars, amplitude to_fit)
         {
-            // We assume pars.size() = 6
-            // first three are the subtraction coefficients
-            // last  three are the t-slopes
-            std::array<double,4> t    = {-0.12,         -0.17,         -0.26,         -0.66};
-            std::array<option,4> opts = {option::tbin0, option::tbin1, option::tbin2, option::tbin3};
-
             for (int i = 0; i < 4; i++)
             {
                 std::vector<complex> new_pars;
                 // g -> g * t exp{b(t-t_0)}
-                for (int j = 0; j < 2; j++) new_pars.push_back(pars[j]*t[i]*exp(pars[2+j]*(t[i]-t[0])));
-                to_fit->set_option(opts[i]);
+                for (int j = 0; j < 2; j++) new_pars.push_back(pars[j]*t_bins[i]*exp(pars[2+j]*(t_bins[i]-t_bins[0])));
+                to_fit->set_option(option::set_tbin, i);
                 to_fit->set_parameters(new_pars);                
             };  
             return pars;
