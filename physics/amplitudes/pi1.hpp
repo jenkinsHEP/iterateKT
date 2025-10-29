@@ -132,15 +132,13 @@ namespace iterateKT
             // Final discontinuity
             return rho*q/p*((1-z*z)*Q0+z);
         };
-        static inline complex deck(complex t, complex M2, complex s)
-        {
-            return deck(t, M2, s, _mu2);
-        };
 
+        // without specififying an exchange mass, assume we mean pion
+        static inline complex deck(complex t, complex M2, complex s)
+        { return deck(t, M2, s, _mu2); };     
+        // adding a form factor is just the pion exchange minus the cutoff      
         static inline complex deck_with_FF(complex t, complex M2, complex s, double lam2)
-        {
-            return deck(t, M2, s, _mu2) - deck(t, M2, s, lam2);
-        };
+        { return deck(t, M2, s, _mu2) - deck(t, M2, s, lam2); };
 
         // Assuming a pi- pi- pi+ decay and only P-waves
         // s = (pi- + pi+)^2 
@@ -155,7 +153,7 @@ namespace iterateKT
     // The following are container amplitudes which holds multiple copies of the above
     // but at different bins in production t for simultaneous fits
 
-    enum class option : unsigned int { set_m3pi2, set_lam2, set_m3pibin, set_tbin };
+    enum class option : unsigned int { set_m3pibin, set_tbin };
 
     class pi1_across_tbins : public raw_amplitude
     {
@@ -176,8 +174,6 @@ namespace iterateKT
         {
             switch (opt)
             {
-                case option::set_m3pi2: _m3pi2 = x; break;
-                case option::set_lam2:  _lam2  = x; break;
                 case option::set_tbin:  _current = _tbins[int(std::round(x))]; break;
                 default: return;
             };
@@ -188,8 +184,8 @@ namespace iterateKT
 
         private:
 
-        // Fixed m3pi and bubble cutoff sqaured
-        double _m3pi2 = 1.4, _lam2 = norm(M_RHO);
+        // how many times to iterate by default
+        int _niter = 10;
 
         // Save each of the 4 bins as a pointer
         std::array<double,4>   _tvals;
@@ -200,12 +196,10 @@ namespace iterateKT
 
         inline void initialize()
         {
-            int    niter = 10; // number of KT iterations to do
-
-            // These change as t changes
-            auto constant = [](complex sigma){ return complex(1.); };
-            auto deck = [&](double m3pi2, double t)
+            auto constant = [ ](complex sigma){ return complex(1.); };
+            auto deck     = [&](double t)
             { 
+                double m3pi2 = _kinematics->M2();
                 return [m3pi2,t](complex sigma){ return pi1::deck(t, m3pi2, sigma);}; 
             };
 
@@ -215,8 +209,8 @@ namespace iterateKT
             // Set up all the amplitudes
             for (int i = 0; i < 4; i++)
             {
-                _tbins[i]->add_isobar<P_wave>({constant, deck(_m3pi2, _tvals[i])}, 3, id::P_wave, "P-wave");
-                _tbins[i]->iterate(niter);
+                _tbins[i]->add_isobar<P_wave>({constant, deck(_tvals[i])}, 3, id::P_wave, "P-wave");
+                _tbins[i]->iterate(_niter);
                 timer.lap("iterated tbin " + to_string(i));
             };
             timer.stop(); timer.print_elapsed();
