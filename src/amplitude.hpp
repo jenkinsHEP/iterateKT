@@ -61,10 +61,6 @@ namespace iterateKT
         // Evaluate the full amplitude.
         virtual complex evaluate(complex s, complex t, complex u);
 
-        // If we only have two mandelstams and both are real
-        // output u from the on-shell condition
-        inline  complex evaluate(double s, double t){ return evaluate(s, t, _kinematics->Sigma() - s - t); };
-
         // Factor to divide by in width calculation
         virtual double  combinatorial_factor(){ return 1; };
 
@@ -110,6 +106,9 @@ namespace iterateKT
         // Get a vector of the currently saved subtraction parameters
         virtual inline std::vector<complex> get_pars()       { return _subtractions->_values; };
         virtual inline std::vector<complex> get_parameters() { return get_pars(); };
+
+        // Return a pointer to the interally saved kinematics instance
+        virtual inline kinematics get_kinematics() { return _kinematics;}
 
         // -----------------------------------------------------------------------
         // Automate making plots of the amplitude
